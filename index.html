@@ -5,651 +5,649 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Receipt Generator</title>
 
-  <!-- Libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <!-- External libs (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
-    :root{--accent:#2b7cff;--muted:#666}
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;line-height:1.4;margin:0;padding:20px;background:#f6f8fb;color:#111}
-    .container{max-width:1100px;margin:0 auto;background:#fff;padding:18px;border-radius:8px;box-shadow:0 8px 30px rgba(20,30,50,0.07)}
-    h1{margin:0 0 12px;font-size:20px}
-    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-    label{display:block;font-size:13px;margin-bottom:6px;color:var(--muted)}
-    input[type="text"], input[type="email"], input[type="tel"], input[type="number"], select, textarea{
-      width:100%;padding:8px;border-radius:6px;border:1px solid #e0e6ef;background:#fff;box-sizing:border-box
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --accent:#2563eb;
+      --accent-2:#0ea5a4;
+      --radius:14px;
+      --shadow: 0 8px 30px rgba(34,41,47,0.06);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     }
-    .section{margin:12px 0;padding:12px;border-radius:8px;border:1px solid #eef2fb;background:#fbfdff}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,var(--bg),#eef2ff);padding:24px;color:#0f172a}
+    .container{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 420px;gap:20px;align-items:start}
+    .card{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);border:1px solid rgba(15,23,42,0.04)}
+    header{grid-column:1/-1;margin-bottom:4px}
+    h1{margin:0;font-size:20px}
+    .subtitle{color:var(--muted);font-size:13px;margin-top:6px}
+
+    /* Form layout */
+    .form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    .full{grid-column:1/-1}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input[type="text"], input[type="email"], input[type="tel"], input[type="number"], select, textarea{
+      width:100%;padding:10px;border-radius:10px;border:1px solid rgba(15,23,42,0.08);background:#fbfdff;font-size:14px;
+    }
+    textarea{min-height:80px;resize:vertical}
+    .segmented{display:flex;background:#f3f4f6;border-radius:10px;overflow:hidden}
+    .segmented button{flex:1;padding:8px 12px;border:0;background:transparent;cursor:pointer;font-weight:600}
+    .segmented button.active{background:linear-gradient(90deg,var(--accent),#4f46e5);color:white}
+
+    .row{display:flex;gap:8px;align-items:center}
+    .muted{color:var(--muted);font-size:13px}
+
+    /* thumbnails */
+    .thumb-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .thumb{position:relative;width:88px;height:68px;border-radius:8px;overflow:hidden;border:1px solid rgba(15,23,42,0.06)}
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .thumb button{position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.6);border:0;color:white;border-radius:6px;padding:3px 6px;cursor:pointer;font-size:12px}
+
+    .section-title{font-weight:700;margin:6px 0 10px}
+    .calc{background:#f8fafc;padding:10px;border-radius:10px;border:1px solid rgba(15,23,42,0.03);display:flex;gap:12px;flex-direction:column}
+    .calc .line{display:flex;justify-content:space-between;font-size:14px}
+    .actions{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+    button.primary{background:var(--accent);border:0;color:white;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:700}
+    button.ghost{background:transparent;border:1px solid rgba(15,23,42,0.06);padding:8px 10px;border-radius:8px;cursor:pointer}
+
+    /* receipt preview */
+    .preview{overflow:auto}
+    .receipt{width:100%;background:white;border-radius:10px;padding:14px;border:1px solid rgba(15,23,42,0.03)}
+    .two-col{display:flex;gap:12px}
+    .sig-canvas{border:1px dashed rgba(15,23,42,0.06);height:120px;border-radius:8px;width:100%}
+    .sig-actions{display:flex;gap:8px;justify-content:center;margin-top:6px}
     .small{font-size:13px;color:var(--muted)}
-    .row{display:flex;gap:8px}
-    .row > *{flex:1}
-    .muted{color:var(--muted)}
-    .inline{display:flex;gap:8px;align-items:center}
-    .controls{display:flex;gap:8px;margin-top:12px}
-    button{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:0;cursor:pointer}
-    button.secondary{background:#fff;color:var(--accent);border:1px solid #e0e6ef}
-    .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-    .thumb{width:90px;height:90px;border-radius:6px;border:1px solid #e6eefc;object-fit:cover}
-    .service-row{display:grid;grid-template-columns:1fr 1fr 120px 120px 120px;gap:8px;align-items:center;margin-bottom:8px}
-    .service-row input{width:100%}
-    .totals{display:flex;flex-direction:column;gap:6px;margin-top:8px;align-items:flex-end}
-    .totals .line{display:flex;gap:18px}
-    .sigpad{border:1px solid #e6eefc;border-radius:6px;width:100%;height:160px;background:#fff}
-    .pdf-preview{display:none} /* not needed */
-    @media (max-width:900px){ .grid{grid-template-columns:1fr} .service-row{grid-template-columns:1fr} .service-row > *{width:100%} }
+
+    /* responsive */
+    @media (max-width: 980px){
+      .container{grid-template-columns:1fr; padding-bottom:60px}
+      .form-grid{grid-template-columns:repeat(1,1fr)}
+    }
   </style>
 </head>
 <body>
+
   <div class="container">
-    <h1>Receipt Generator</h1>
-    <p class="small">Fill in seller/buyer details, choose Item or Service, capture signatures, then generate a PDF receipt.</p>
-
-    <div class="section">
-      <h3>Seller's Information</h3>
-      <div class="grid">
+    <header class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
         <div>
-          <label>First name<input id="seller_first" type="text"></label>
-          <label>Property Number or Name<input id="seller_prop" type="text"></label>
-          <label>Address line 1<input id="seller_addr1" type="text"></label>
-          <label>Town<input id="seller_town" type="text"></label>
-          <label>County<input id="seller_county" type="text"></label>
-          <label>Post Code<input id="seller_post" type="text"></label>
-          <label>Country<input id="seller_country" type="text"></label>
+          <h1>Receipt Generator</h1>
+          <div class="subtitle">Fill seller/buyer info, choose Item or Service, attach images, capture signatures and export as PDF.</div>
         </div>
-        <div>
-          <label>Last name<input id="seller_last" type="text"></label>
-          <label>Company (if applicable)<input id="seller_company" type="text"></label>
-          <label>Address line 2<input id="seller_addr2" type="text"></label>
-          <label>Address line 3<input id="seller_addr3" type="text"></label>
-          <label>Telephone Number<input id="seller_tel" type="tel"></label>
-          <label>Email Address<input id="seller_email" type="email"></label>
-        </div>
+        <div class="small">Client-side only • No server required</div>
       </div>
-    </div>
+    </header>
 
-    <div class="section">
-      <h3>Buyer's Information</h3>
-      <div class="grid">
-        <div>
-          <label>First name<input id="buyer_first" type="text"></label>
-          <label>Property Number or Name<input id="buyer_prop" type="text"></label>
-          <label>Address line 1<input id="buyer_addr1" type="text"></label>
-          <label>Town<input id="buyer_town" type="text"></label>
-          <label>County<input id="buyer_county" type="text"></label>
-          <label>Post Code<input id="buyer_post" type="text"></label>
-          <label>Country<input id="buyer_country" type="text"></label>
-        </div>
-        <div>
-          <label>Last name<input id="buyer_last" type="text"></label>
-          <label>Company (if applicable)<input id="buyer_company" type="text"></label>
-          <label>Address line 2<input id="buyer_addr2" type="text"></label>
-          <label>Address line 3<input id="buyer_addr3" type="text"></label>
-          <label>Telephone Number<input id="buyer_tel" type="tel"></label>
-          <label>Email Address<input id="buyer_email" type="email"></label>
-        </div>
-      </div>
-    </div>
-
-    <div class="section">
-      <h3>Purchase Details</h3>
-      <div class="row">
-        <div>
-          <label>Service or Item purchased (short text)<input id="purchase_desc" type="text"></label>
-          <label>Online Purchased Site (e.g. Facebook, eBay)<input id="purchase_site" type="text"></label>
-        </div>
-        <div style="min-width:220px;">
-          <label class="inline"><input id="mode_item" type="radio" name="mode" checked> Item</label>
-          <label class="inline"><input id="mode_service" type="radio" name="mode"> Service</label>
-          <div class="small muted">Choose Item or Service to reveal the right fields</div>
-        </div>
-      </div>
-
-      <!-- ITEM BLOCK -->
-      <div id="block_item" style="margin-top:12px">
-        <div class="grid">
+    <!-- LEFT: Form -->
+    <main class="card" id="left">
+      <form id="mainForm" onsubmit="return false;">
+        <div class="form-grid">
+          <!-- Seller -->
           <div>
-            <label>Item Name<input id="item_name" type="text"></label>
-            <label>Item Description<textarea id="item_desc" rows="3"></textarea></label>
-            <label>Item Condition<input id="item_condition" type="text" placeholder="e.g. Used - Good"></label>
+            <div class="section-title">Seller Information</div>
+            <label>First name<input type="text" id="seller_first" placeholder="John"></label>
+            <label>Last name<input type="text" id="seller_last" placeholder="Doe"></label>
+            <label>Property number / name<input type="text" id="seller_prop"></label>
+            <label>Company (if applicable)<input type="text" id="seller_company"></label>
+            <label>Address line 1<input type="text" id="seller_addr1"></label>
+            <label>Address line 2<input type="text" id="seller_addr2"></label>
+            <label>Address line 3<input type="text" id="seller_addr3"></label>
+            <label>Town<input type="text" id="seller_town"></label>
+            <label>County<input type="text" id="seller_county"></label>
+            <label>Post code<input type="text" id="seller_post"></label>
+            <label>Country<input type="text" id="seller_country"></label>
+            <label>Telephone<input type="tel" id="seller_tel"></label>
+            <label>Email<input type="email" id="seller_email"></label>
           </div>
+
+          <!-- Buyer -->
           <div>
-            <label>Item Cost (£)<input id="item_cost" type="number" min="0" step="0.01" value="0"></label>
-            <label>Delivery Charge (£)<input id="item_delivery" type="number" min="0" step="0.01" value="0"></label>
-            <label><input id="tax_exempt" type="checkbox"> Tax Exempt (if checked, no tax field)</label>
-            <div id="tax_row">
-              <label>Tax cost (£)<input id="item_tax" type="number" min="0" step="0.01" value="0"></label>
+            <div class="section-title">Buyer Information</div>
+            <label>First name<input type="text" id="buyer_first" placeholder="Jane"></label>
+            <label>Last name<input type="text" id="buyer_last" placeholder="Smith"></label>
+            <label>Property number / name<input type="text" id="buyer_prop"></label>
+            <label>Company (if applicable)<input type="text" id="buyer_company"></label>
+            <label>Address line 1<input type="text" id="buyer_addr1"></label>
+            <label>Address line 2<input type="text" id="buyer_addr2"></label>
+            <label>Address line 3<input type="text" id="buyer_addr3"></label>
+            <label>Town<input type="text" id="buyer_town"></label>
+            <label>County<input type="text" id="buyer_county"></label>
+            <label>Post code<input type="text" id="buyer_post"></label>
+            <label>Country<input type="text" id="buyer_country"></label>
+            <label>Telephone<input type="tel" id="buyer_tel"></label>
+            <label>Email<input type="email" id="buyer_email"></label>
+          </div>
+
+          <!-- Full row: purchase meta -->
+          <div class="full">
+            <div class="section-title">Purchase</div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <label style="flex:1">
+                Online Purchased Site (e.g., Facebook)
+                <input type="text" id="online_site" placeholder="Facebook Marketplace">
+              </label>
+
+              <div style="min-width:220px">
+                <div class="muted">Select type</div>
+                <div class="segmented" style="margin-top:6px">
+                  <button id="btnItem" class="active" type="button">Item</button>
+                  <button id="btnService" type="button">Service</button>
+                </div>
+              </div>
             </div>
-            <label>Total Cost (£)<input id="item_total" readonly type="text"></label>
           </div>
-        </div>
 
-        <div style="margin-top:8px">
-          <label>Upload pictures of the item<input id="item_images" type="file" accept="image/*" multiple></label>
-          <div id="item_thumbs" class="thumbs"></div>
-        </div>
-      </div>
+          <!-- Item block -->
+          <div id="itemBlock" class="full">
+            <div class="section-title">Item Details</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <label>Item Name<input type="text" id="item_name"></label>
+              <label>Condition<input type="text" id="item_condition" placeholder="New / Used"></label>
+              <label class="full">Description<textarea id="item_desc"></textarea></label>
+              <label>Item Cost (£)<input type="number" id="item_cost" step="0.01" value="0"></label>
+              <label>Delivery Charge (£)<input type="number" id="item_delivery" step="0.01" value="0"></label>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="item_vat_reg"> VAT Registered</label>
+                <input type="text" id="item_vat_num" placeholder="VAT number (if registered)" style="display:none">
+                <div style="display:flex;gap:8px;align-items:center">
+                  <select id="item_vat_rate" style="width:120px;display:none">
+                    <option value="0">0%</option>
+                    <option value="5">5%</option>
+                    <option value="12.5">12.5%</option>
+                    <option value="20" selected>20%</option>
+                  </select>
+                  <div class="muted" id="item_vat_amount">VAT to add: £0.00</div>
+                </div>
+              </div>
+            </div>
 
-      <!-- SERVICE BLOCK -->
-      <div id="block_service" style="display:none;margin-top:12px">
-        <div class="row">
-          <div>
-            <label>Is the company VAT registered?
-              <select id="service_vat_registered">
-                <option value="no">No</option>
-                <option value="yes">Yes</option>
+            <div style="display:flex;gap:12px;align-items:center;margin-top:10px;flex-wrap:wrap">
+              <div>
+                <label class="muted">Upload image(s)</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <input id="item_image_input" type="file" accept="image/*" multiple>
+                  <button id="item_image_add" class="ghost" type="button">Add</button>
+                </div>
+                <div class="thumb-grid" id="item_thumbs"></div>
+              </div>
+
+              <div style="margin-left:auto;min-width:220px">
+                <div class="calc">
+                  <div class="line"><div class="muted">Subtotal</div><div id="item_sub">£0.00</div></div>
+                  <div class="line"><div class="muted">VAT</div><div id="item_vat">£0.00</div></div>
+                  <div class="line" style="font-weight:700"><div>Total</div><div id="item_total">£0.00</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Service block -->
+          <div id="serviceBlock" class="full" style="display:none">
+            <div class="section-title">Service Details</div>
+
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+              <label style="display:flex;gap:8px;align-items:center">
+                <input type="checkbox" id="service_vat_reg"> VAT Registered
+              </label>
+              <input type="text" id="service_vat_num" placeholder="VAT number" style="display:none">
+              <select id="service_vat_rate" style="display:none">
+                <option value="0">0%</option>
+                <option value="5">5%</option>
+                <option value="12.5">12.5%</option>
+                <option value="20" selected>20%</option>
               </select>
-            </label>
+
+              <label style="margin-left:auto">How many service items
+                <select id="service_count">
+                  <!-- 1..10 -->
+                  <script>for(let i=1;i<=10;i++){document.write(`<option>${i}</option>`)};</script>
+                </select>
+              </label>
+            </div>
+
+            <div id="service_items" style="margin-top:12px;display:grid;gap:10px"></div>
+
+            <div style="display:flex;gap:12px;align-items:center;margin-top:10px;flex-wrap:wrap">
+              <div>
+                <label class="muted">Upload image(s) of service</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <input id="service_image_input" type="file" accept="image/*" multiple>
+                  <button id="service_image_add" class="ghost" type="button">Add</button>
+                </div>
+                <div class="thumb-grid" id="service_thumbs"></div>
+              </div>
+
+              <div style="margin-left:auto;min-width:220px">
+                <div class="calc">
+                  <div class="line"><div class="muted">Sub total</div><div id="service_sub">£0.00</div></div>
+                  <div class="line"><div class="muted">VAT</div><div id="service_vat">£0.00</div></div>
+                  <div class="line" style="font-weight:700"><div>Total</div><div id="service_total">£0.00</div></div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div style="min-width:240px">
-            <label>How many service items?
-              <select id="service_count">
-                <!-- options 1..10 -->
-              </select>
-            </label>
+
+        </div>
+
+        <!-- signatures -->
+        <div style="margin-top:14px">
+          <div class="section-title">Signatures</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <div class="small">Seller Signature</div>
+              <canvas id="sig_seller" class="sig-canvas"></canvas>
+              <div class="sig-actions"><button id="seller_clear" class="ghost" type="button">Clear</button></div>
+            </div>
+            <div>
+              <div class="small">Buyer Signature</div>
+              <canvas id="sig_buyer" class="sig-canvas"></canvas>
+              <div class="sig-actions"><button id="buyer_clear" class="ghost" type="button">Clear</button></div>
+            </div>
           </div>
         </div>
 
-        <div id="service_items_container" style="margin-top:8px;"></div>
-
-        <div class="totals">
-          <div class="line"><div class="muted">Services Subtotal: </div><div id="services_subtotal">£0.00</div></div>
-          <div class="line"><div class="muted">Total VAT: </div><div id="services_vat_total">£0.00</div></div>
-          <div class="line"><strong>Total:</strong><strong id="services_total">£0.00</strong></div>
+        <div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px">
+          <button id="previewButton" class="ghost" type="button">Refresh Preview</button>
+          <button id="exportPDF" class="primary" type="button">Generate Receipt (PDF)</button>
         </div>
 
-        <div style="margin-top:8px">
-          <label>Upload pictures of the service carried out<input id="service_images" type="file" accept="image/*" multiple></label>
-          <div id="service_thumbs" class="thumbs"></div>
+      </form>
+    </main>
+
+    <!-- RIGHT: Preview -->
+    <aside class="card" id="right">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong>Receipt Preview</strong><div class="small">This is what will be exported to PDF.</div></div>
+        <div class="small" id="generatedAt"></div>
+      </div>
+
+      <div style="margin-top:12px" class="preview">
+        <div id="receipt" class="receipt">
+          <!-- receipt contents built by JS -->
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <h3 style="margin:0">Receipt</h3>
+              <div class="small" id="previewDate"></div>
+            </div>
+            <div style="text-align:right">
+              <div class="small">Online site</div>
+              <div id="previewOnline" style="font-weight:700"></div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px" class="two-col">
+            <div style="flex:1">
+              <div style="font-weight:700">Seller</div>
+              <div id="p_seller_name"></div>
+              <div id="p_seller_company" class="small"></div>
+              <div id="p_seller_addr" class="small"></div>
+              <div id="p_seller_contact" class="small"></div>
+            </div>
+            <div style="flex:1">
+              <div style="font-weight:700">Buyer</div>
+              <div id="p_buyer_name"></div>
+              <div id="p_buyer_company" class="small"></div>
+              <div id="p_buyer_addr" class="small"></div>
+              <div id="p_buyer_contact" class="small"></div>
+            </div>
+          </div>
+
+          <hr style="margin:12px 0">
+
+          <div id="previewContent"></div>
+
+          <div style="margin-top:12px" id="previewImages"></div>
+
+          <div style="margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <div class="small">Seller Signature</div>
+              <div id="p_sig_seller" style="border:1px solid rgba(15,23,42,0.04);height:80px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#fbfdff"></div>
+            </div>
+            <div>
+              <div class="small">Buyer Signature</div>
+              <div id="p_sig_buyer" style="border:1px solid rgba(15,23,42,0.04);height:80px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#fbfdff"></div>
+            </div>
+          </div>
+
         </div>
       </div>
-    </div>
 
-    <div class="section">
-      <h3>Signatures</h3>
-      <div class="grid">
-        <div>
-          <div class="small">Seller's Signature</div>
-          <canvas id="sig_seller" class="sigpad"></canvas>
-          <div class="controls">
-            <button id="clear_seller" class="secondary">Clear</button>
-          </div>
-        </div>
-        <div>
-          <div class="small">Buyer's Signature</div>
-          <canvas id="sig_buyer" class="sigpad"></canvas>
-          <div class="controls">
-            <button id="clear_buyer" class="secondary">Clear</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:12px">
-      <button id="generate">Generate Receipt (PDF)</button>
-      <button id="reset" class="secondary">Reset Form</button>
-    </div>
-
-    <!-- invisible area to render receipt for accurate PDF capture -->
-    <div id="pdf_area" class="pdf-preview" style="padding:18px;background:#fff;max-width:800px;margin-top:20px;">
-      <!-- generated on demand -->
-    </div>
+    </aside>
   </div>
 
 <script>
-(function(){
-  // Helper: currency math in pence to avoid float errors
-  function toPence(value){
-    // accept number or string
-    const n = Number(value) || 0;
-    return Math.round(n * 100);
-  }
-  function penceToStr(p){
-    return '£' + (p/100).toFixed(2);
-  }
-  function penceToNumber(p){ return p/100; }
+  // Utility
+  const $ = (id) => document.getElementById(id);
+  const money = (n) => '£' + Number(n || 0).toFixed(2);
+  const nowStr = () => new Date().toLocaleString();
 
-  // Elements
-  const modeItem = document.getElementById('mode_item');
-  const modeService = document.getElementById('mode_service');
-  const blockItem = document.getElementById('block_item');
-  const blockService = document.getElementById('block_service');
-
-  // Item elements
-  const itemCost = document.getElementById('item_cost');
-  const itemDelivery = document.getElementById('item_delivery');
-  const taxExempt = document.getElementById('tax_exempt');
-  const itemTax = document.getElementById('item_tax');
-  const itemTotal = document.getElementById('item_total');
-  const itemImages = document.getElementById('item_images');
-  const itemThumbs = document.getElementById('item_thumbs');
-
-  // Service elements
-  const serviceCount = document.getElementById('service_count');
-  const serviceItemsContainer = document.getElementById('service_items_container');
-  const serviceVatRegistered = document.getElementById('service_vat_registered');
-  const servicesSubtotalEl = document.getElementById('services_subtotal');
-  const servicesVatTotalEl = document.getElementById('services_vat_total');
-  const servicesTotalEl = document.getElementById('services_total');
-  const serviceImages = document.getElementById('service_images');
-  const serviceThumbs = document.getElementById('service_thumbs');
+  // Mode toggle
+  const btnItem = $('btnItem'), btnService = $('btnService'), itemBlock = $('itemBlock'), serviceBlock = $('serviceBlock');
+  btnItem.addEventListener('click', () => { btnItem.classList.add('active'); btnService.classList.remove('active'); itemBlock.style.display='block'; serviceBlock.style.display='none'; updatePreview(); });
+  btnService.addEventListener('click', () => { btnService.classList.add('active'); btnItem.classList.remove('active'); itemBlock.style.display='none'; serviceBlock.style.display='block'; updatePreview(); });
 
   // Signatures
-  const sigSellerCanvas = document.getElementById('sig_seller');
-  const sigBuyerCanvas = document.getElementById('sig_buyer');
-  const clearSeller = document.getElementById('clear_seller');
-  const clearBuyer = document.getElementById('clear_buyer');
+  const sigSellerCanvas = $('sig_seller');
+  const sigBuyerCanvas = $('sig_buyer');
+  function fitCanvas(can){ can.width = can.clientWidth * devicePixelRatio; can.height = can.clientHeight * devicePixelRatio; const ctx=can.getContext('2d'); ctx.scale(devicePixelRatio, devicePixelRatio); }
+  fitCanvas(sigSellerCanvas); fitCanvas(sigBuyerCanvas);
+  const sigSeller = new SignaturePad(sigSellerCanvas, { penColor: "rgb(20,20,20)" });
+  const sigBuyer = new SignaturePad(sigBuyerCanvas, { penColor: "rgb(20,20,20)" });
+  window.addEventListener('resize', ()=>{ fitCanvas(sigSellerCanvas); fitCanvas(sigBuyerCanvas); sigSeller.clear(); sigBuyer.clear(); });
 
-  // Buttons
-  const generateBtn = document.getElementById('generate');
-  const resetBtn = document.getElementById('reset');
+  $('seller_clear').addEventListener('click', ()=> sigSeller.clear());
+  $('buyer_clear').addEventListener('click', ()=> sigBuyer.clear());
 
-  // initialize service count options 1..10
-  for(let i=1;i<=10;i++){
-    const opt = document.createElement('option');
-    opt.value = i; opt.textContent = i;
-    serviceCount.appendChild(opt);
-  }
-
-  // Toggle modes
-  function updateMode(){
-    if(modeItem.checked){
-      blockItem.style.display = '';
-      blockService.style.display = 'none';
-    } else {
-      blockItem.style.display = 'none';
-      blockService.style.display = '';
-    }
-  }
-  modeItem.addEventListener('change', updateMode);
-  modeService.addEventListener('change', updateMode);
-
-  // Item calculations
-  function recalcItemTotal(){
-    const pCost = toPence(itemCost.value);
-    const pDelivery = toPence(itemDelivery.value);
-    const pTax = taxExempt.checked ? 0 : toPence(itemTax.value);
-    const total = pCost + pDelivery + pTax;
-    itemTotal.value = penceToNumber(total).toFixed(2);
-  }
-  itemCost.addEventListener('input', recalcItemTotal);
-  itemDelivery.addEventListener('input', recalcItemTotal);
-  itemTax.addEventListener('input', recalcItemTotal);
-  taxExempt.addEventListener('change', () => {
-    document.getElementById('tax_row').style.display = taxExempt.checked ? 'none' : '';
-    recalcItemTotal();
+  // Item VAT controls
+  const itemVatReg = $('item_vat_reg'), itemVatNum = $('item_vat_num'), itemVatRate = $('item_vat_rate');
+  itemVatReg.addEventListener('change', ()=> {
+    const on = itemVatReg.checked;
+    itemVatNum.style.display = on ? 'block' : 'none';
+    itemVatRate.style.display = on ? 'inline-block' : 'none';
+    updateItemCalc();
+    updatePreview();
   });
-  // initialize tax row
-  document.getElementById('tax_row').style.display = taxExempt.checked ? 'none' : '';
 
-  // Image previews
-  function previewFiles(inputEl, targetEl){
-    const files = Array.from(inputEl.files || []);
-    targetEl.innerHTML = '';
-    files.forEach(file => {
-      const img = document.createElement('img');
-      img.className = 'thumb';
-      img.alt = file.name;
-      const reader = new FileReader();
-      reader.onload = e => img.src = e.target.result;
-      reader.readAsDataURL(file);
-      targetEl.appendChild(img);
-    });
-  }
-  itemImages.addEventListener('change', ()=> previewFiles(itemImages,itemThumbs));
-  serviceImages.addEventListener('change', ()=> previewFiles(serviceImages,serviceThumbs));
+  // Service VAT controls
+  const srvVatReg = $('service_vat_reg'), srvVatNum = $('service_vat_num'), srvVatRate = $('service_vat_rate');
+  srvVatReg.addEventListener('change', ()=> {
+    const on = srvVatReg.checked;
+    srvVatNum.style.display = on ? 'inline-block' : 'none';
+    srvVatRate.style.display = on ? 'inline-block' : 'none';
+    updateServiceCalc();
+    updatePreview();
+  });
 
-  // Signature pads
-  function fitCanvas(canvas){
-    const ratio = Math.max(window.devicePixelRatio || 1, 1);
-    const w = canvas.offsetWidth;
-    const h = canvas.offsetHeight;
-    canvas.width = Math.floor(w * ratio);
-    canvas.height = Math.floor(h * ratio);
-    canvas.getContext('2d').scale(ratio, ratio);
-  }
-  function createSignaturePad(canvas){
-    fitCanvas(canvas);
-    const pad = new SignaturePad(canvas, {backgroundColor: '#fff'});
-    window.addEventListener('resize', ()=> {
-      // preserve drawing by converting to image, resizing, redrawing
-      const data = pad.isEmpty() ? null : pad.toDataURL();
-      fitCanvas(canvas);
-      if(data) {
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
-        img.onload = ()=> ctx.drawImage(img,0,0,canvas.width/ (window.devicePixelRatio||1), canvas.height/ (window.devicePixelRatio||1));
-        img.src = data;
-      }
-    });
-    return pad;
-  }
-  const padSeller = createSignaturePad(sigSellerCanvas);
-  const padBuyer = createSignaturePad(sigBuyerCanvas);
-  clearSeller.addEventListener('click', ()=> padSeller.clear());
-  clearBuyer.addEventListener('click', ()=> padBuyer.clear());
+  // Item inputs
+  ['item_cost','item_delivery','item_vat_rate'].forEach(id => $(id).addEventListener('input', ()=> { updateItemCalc(); updatePreview(); }));
+  ['item_name','item_condition','item_desc'].forEach(id => $(id).addEventListener('input', updatePreview));
 
-  // SERVICE: create dynamic rows
-  function createServiceRows(count){
-    serviceItemsContainer.innerHTML = '';
+  function updateItemCalc(){
+    const cost = parseFloat($('item_cost').value||0);
+    const delivery = parseFloat($('item_delivery').value||0);
+    const subtotal = cost + delivery;
+    const vat = (itemVatReg.checked ? subtotal * (parseFloat(itemVatRate.value||0)/100) : 0);
+    $('item_sub').textContent = money(subtotal);
+    $('item_vat').textContent = money(vat);
+    $('item_total').textContent = money(subtotal + vat);
+    $('item_vat_amount').textContent = 'VAT to add: ' + money(vat);
+  }
+
+  // Service items dynamic
+  const serviceCount = $('service_count'), serviceItemsDiv = $('service_items');
+  function renderServiceItems(count){
+    serviceItemsDiv.innerHTML = '';
     for(let i=0;i<count;i++){
-      const row = document.createElement('div');
-      row.className = 'service-row';
-      row.innerHTML = `
-        <input type="text" class="svc_name" placeholder="Service item name">
-        <input type="text" class="svc_desc" placeholder="Service description">
-        <input type="number" min="0" step="0.01" class="svc_cost" value="0" placeholder="Cost £">
-        <input type="number" min="0" step="0.01" class="svc_vat" value="0" placeholder="VAT £">
-        <input type="text" class="svc_sub" readonly placeholder="Sub total £">
+      const idx = i;
+      const block = document.createElement('div');
+      block.style.border = '1px solid rgba(15,23,42,0.04)';
+      block.style.padding = '10px';
+      block.style.borderRadius = '8px';
+      block.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">Service item ${idx+1}</div>
+          <div class="muted">Cost: <span id="svc_${idx}_cost_disp">£0.00</span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 140px;gap:8px;margin-top:8px">
+          <input id="svc_${idx}_name" placeholder="Service item name">
+          <input id="svc_${idx}_cost" type="number" step="0.01" value="0">
+        </div>
+        <div style="margin-top:8px"><textarea id="svc_${idx}_desc" placeholder="Service description"></textarea></div>
       `;
-      serviceItemsContainer.appendChild(row);
+      serviceItemsDiv.appendChild(block);
+
+      // sync events
+      $(`svc_${idx}_cost`).addEventListener('input', ()=> { $(`svc_${idx}_cost_disp`).textContent = money($(`svc_${idx}_cost`).value||0); updateServiceCalc(); updatePreview(); });
+      $(`svc_${idx}_name`).addEventListener('input', updatePreview);
+      $(`svc_${idx}_desc`).addEventListener('input', updatePreview);
     }
-    // attach listeners to cost/vat fields
-    Array.from(serviceItemsContainer.querySelectorAll('.svc_cost, .svc_vat')).forEach(inp=>{
-      inp.addEventListener('input', recalcServicesTotals);
-    });
-    recalcServicesTotals();
   }
-  serviceCount.addEventListener('change', ()=> createServiceRows(Number(serviceCount.value)));
-  // initialize
-  createServiceRows(Number(serviceCount.value || 1));
+  renderServiceItems(1);
+  serviceCount.addEventListener('change', ()=> { renderServiceItems(parseInt(serviceCount.value)); updateServiceCalc(); updatePreview(); });
 
-  serviceVatRegistered.addEventListener('change', ()=> {
-    // if not VAT registered, disable VAT inputs and set to 0
-    const disabled = serviceVatRegistered.value === 'no';
-    Array.from(serviceItemsContainer.querySelectorAll('.svc_vat')).forEach(v=>{
-      v.disabled = disabled;
-      if(disabled){ v.value = '0'; }
-    });
-    recalcServicesTotals();
-  });
-
-  function recalcServicesTotals(){
-    const rows = Array.from(serviceItemsContainer.querySelectorAll('.service-row'));
+  function updateServiceCalc(){
     let subtotal = 0;
-    let vatTotal = 0;
-    rows.forEach(r=>{
-      const cost = toPence(r.querySelector('.svc_cost').value);
-      const vat = toPence(r.querySelector('.svc_vat').value);
-      const sub = cost + vat;
-      r.querySelector('.svc_sub').value = penceToNumber(sub).toFixed(2);
+    const count = parseInt(serviceCount.value);
+    for(let i=0;i<count;i++){
+      const cost = parseFloat($(`svc_${i}_cost`).value||0);
       subtotal += cost;
-      vatTotal += vat;
-    });
-    const total = subtotal + vatTotal;
-    servicesSubtotalEl.textContent = penceToStr(subtotal);
-    servicesVatTotalEl.textContent = penceToStr(vatTotal);
-    servicesTotalEl.textContent = penceToStr(total);
+    }
+    const vat = srvVatReg.checked ? subtotal * (parseFloat(srvVatRate.value||0)/100) : 0;
+    $('service_sub').textContent = money(subtotal);
+    $('service_vat').textContent = money(vat);
+    $('service_total').textContent = money(subtotal + vat);
   }
 
-  // Reset form
-  resetBtn.addEventListener('click', ()=>{
-    if(!confirm('Reset the form?')) return;
-    document.querySelectorAll('input[type=text], input[type=email], input[type=tel], textarea, input[type=number]').forEach(i=> i.value = '');
-    document.querySelectorAll('input[type=checkbox], input[type=radio]').forEach(i=> i.checked = false);
-    modeItem.checked = true; updateMode();
-    taxExempt.checked = false; document.getElementById('tax_row').style.display = '';
-    serviceCount.value = '1'; createServiceRows(1);
-    serviceVatRegistered.value = 'no'; serviceVatRegistered.dispatchEvent(new Event('change'));
-    itemThumbs.innerHTML = ''; serviceThumbs.innerHTML = '';
-    itemImages.value = ''; serviceImages.value = '';
-    padSeller.clear(); padBuyer.clear();
-    recalcItemTotal();
-  });
-
-  // Build PDF content and generate
-  async function generatePDF(){
-    // prepare a clean render in #pdf_area (invisible in UI)
-    const pdfArea = document.getElementById('pdf_area');
-    pdfArea.innerHTML = ''; // clear
-
-    // helper for reading image files as dataURL
-    function filesToDataURLs(inputEl){
-      const files = Array.from(inputEl.files || []);
-      return Promise.all(files.map(f => new Promise((res,rej)=>{
-        const r = new FileReader();
-        r.onload = e => res({name:f.name, dataUrl:e.target.result});
-        r.onerror = rej;
-        r.readAsDataURL(f);
-      })));
-    }
-
-    // gather details
-    const seller = {
-      first: document.getElementById('seller_first').value || '',
-      last: document.getElementById('seller_last').value || '',
-      company: document.getElementById('seller_company').value || '',
-      prop: document.getElementById('seller_prop').value || '',
-      addr1: document.getElementById('seller_addr1').value || '',
-      addr2: document.getElementById('seller_addr2').value || '',
-      addr3: document.getElementById('seller_addr3').value || '',
-      town: document.getElementById('seller_town').value || '',
-      county: document.getElementById('seller_county').value || '',
-      post: document.getElementById('seller_post').value || '',
-      country: document.getElementById('seller_country').value || '',
-      tel: document.getElementById('seller_tel').value || '',
-      email: document.getElementById('seller_email').value || ''
-    };
-    const buyer = {
-      first: document.getElementById('buyer_first').value || '',
-      last: document.getElementById('buyer_last').value || '',
-      company: document.getElementById('buyer_company').value || '',
-      prop: document.getElementById('buyer_prop').value || '',
-      addr1: document.getElementById('buyer_addr1').value || '',
-      addr2: document.getElementById('buyer_addr2').value || '',
-      addr3: document.getElementById('buyer_addr3').value || '',
-      town: document.getElementById('buyer_town').value || '',
-      county: document.getElementById('buyer_county').value || '',
-      post: document.getElementById('buyer_post').value || '',
-      country: document.getElementById('buyer_country').value || '',
-      tel: document.getElementById('buyer_tel').value || '',
-      email: document.getElementById('buyer_email').value || ''
-    };
-    const purchaseDesc = document.getElementById('purchase_desc').value || '';
-    const purchaseSite = document.getElementById('purchase_site').value || '';
-
-    const mode = modeItem.checked ? 'item' : 'service';
-
-    let itemImagesData = await filesToDataURLs(itemImages);
-    let serviceImagesData = await filesToDataURLs(serviceImages);
-
-    // draw a neat receipt layout into pdfArea
-    const el = document.createElement('div');
-    el.style.fontFamily = 'Arial, Helvetica, sans-serif';
-    el.style.color = '#111';
-    el.style.padding = '14px';
-    el.style.width = '780px';
-    el.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <h2 style="margin:0">Receipt</h2>
-          <div style="color:#666">Date: ${new Date().toLocaleString()}</div>
-        </div>
-        <div style="text-align:right;color:#666">
-          <div>Purchase: ${escapeHtml(purchaseDesc)}</div>
-          <div>Site: ${escapeHtml(purchaseSite)}</div>
-        </div>
-      </div>
-      <hr style="margin:10px 0">
-      <div style="display:flex;gap:20px">
-        <div style="flex:1">
-          <strong>Seller</strong>
-          <div>${escapeHtml(seller.first)} ${escapeHtml(seller.last)} ${seller.company?('<div>'+escapeHtml(seller.company)+'</div>'):''}</div>
-          <div>${escapeHtml(seller.prop)}</div>
-          <div>${escapeHtml(seller.addr1)}</div>
-          <div>${escapeHtml(seller.addr2)}</div>
-          <div>${escapeHtml(seller.addr3)}</div>
-          <div>${escapeHtml(seller.town)} ${escapeHtml(seller.county)}</div>
-          <div>${escapeHtml(seller.post)} ${escapeHtml(seller.country)}</div>
-          <div class="muted">tel: ${escapeHtml(seller.tel)} | email: ${escapeHtml(seller.email)}</div>
-        </div>
-        <div style="flex:1">
-          <strong>Buyer</strong>
-          <div>${escapeHtml(buyer.first)} ${escapeHtml(buyer.last)} ${buyer.company?('<div>'+escapeHtml(buyer.company)+'</div>'):''}</div>
-          <div>${escapeHtml(buyer.prop)}</div>
-          <div>${escapeHtml(buyer.addr1)}</div>
-          <div>${escapeHtml(buyer.addr2)}</div>
-          <div>${escapeHtml(buyer.addr3)}</div>
-          <div>${escapeHtml(buyer.town)} ${escapeHtml(buyer.county)}</div>
-          <div>${escapeHtml(buyer.post)} ${escapeHtml(buyer.country)}</div>
-          <div class="muted">tel: ${escapeHtml(buyer.tel)} | email: ${escapeHtml(buyer.email)}</div>
-        </div>
-      </div>
-      <hr style="margin:10px 0">
-    `;
-
-    if(mode === 'item'){
-      const name = document.getElementById('item_name').value || '';
-      const desc = document.getElementById('item_desc').value || '';
-      const cond = document.getElementById('item_condition').value || '';
-      const cost = toPence(document.getElementById('item_cost').value);
-      const delivery = toPence(document.getElementById('item_delivery').value);
-      const tax = taxExempt.checked ? 0 : toPence(document.getElementById('item_tax').value);
-      const total = cost + delivery + tax;
-
-      el.innerHTML += `
-        <div>
-          <h3 style="margin:4px 0">Item</h3>
-          <div><strong>Name:</strong> ${escapeHtml(name)}</div>
-          <div><strong>Description:</strong> ${escapeHtml(desc)}</div>
-          <div><strong>Condition:</strong> ${escapeHtml(cond)}</div>
-          <table style="width:100%;margin-top:8px;border-collapse:collapse">
-            <tr>
-              <td style="padding:6px;border:1px solid #eee">Item cost</td><td style="padding:6px;border:1px solid #eee;text-align:right">${penceToStr(cost)}</td>
-            </tr>
-            <tr>
-              <td style="padding:6px;border:1px solid #eee">Delivery</td><td style="padding:6px;border:1px solid #eee;text-align:right">${penceToStr(delivery)}</td>
-            </tr>
-            ${taxExempt.checked ? '' : `<tr><td style="padding:6px;border:1px solid #eee">Tax</td><td style="padding:6px;border:1px solid #eee;text-align:right">${penceToStr(tax)}</td></tr>`}
-            <tr><td style="padding:6px;border:1px solid #eee"><strong>Total</strong></td><td style="padding:6px;border:1px solid #eee;text-align:right"><strong>${penceToStr(total)}</strong></td></tr>
-          </table>
-        </div>
-      `;
-
-      if(itemImagesData.length){
-        el.innerHTML += '<div style="margin-top:8px"><strong>Item Images:</strong></div>';
-        itemImagesData.forEach(img => {
-          el.innerHTML += `<div style="margin-top:6px"><img src="${img.dataUrl}" style="max-width:240px;max-height:180px;border:1px solid #eee;border-radius:6px"></div>`;
-        });
+  // Images: add, preview, delete
+  function setupImageControls(inputId, addButtonId, thumbContainerId, storeArray){
+    const input = $(inputId), addBtn = $(addButtonId), container = $(thumbContainerId);
+    // storeArray is an array reference to hold {id, file, url}
+    addBtn.addEventListener('click', ()=> {
+      // if user selected files, add them; otherwise trigger file picker
+      if(input.files && input.files.length>0){
+        addFiles(input.files);
+        input.value = '';
+      } else {
+        input.click();
       }
-    } else {
-      // services
-      el.innerHTML += `<div><h3 style="margin:4px 0">Services</h3>`;
-      const rows = Array.from(serviceItemsContainer.querySelectorAll('.service-row'));
-      el.innerHTML += `<table style="width:100%;border-collapse:collapse"><thead><tr>
-        <th style="text-align:left;border:1px solid #eee;padding:6px">Name</th>
-        <th style="text-align:left;border:1px solid #eee;padding:6px">Description</th>
-        <th style="text-align:right;border:1px solid #eee;padding:6px">Cost</th>
-        <th style="text-align:right;border:1px solid #eee;padding:6px">VAT</th>
-        <th style="text-align:right;border:1px solid #eee;padding:6px">Subtotal</th>
-      </tr></thead><tbody>`;
-      let sSubtotal=0, sVat=0;
-      rows.forEach(r=>{
-        const n = escapeHtml(r.querySelector('.svc_name').value || '');
-        const d = escapeHtml(r.querySelector('.svc_desc').value || '');
-        const cost = toPence(r.querySelector('.svc_cost').value);
-        const vat = toPence(r.querySelector('.svc_vat').value);
-        const sub = cost + vat;
-        sSubtotal += cost; sVat += vat;
-        el.innerHTML += `<tr>
-          <td style="border:1px solid #eee;padding:6px">${n}</td>
-          <td style="border:1px solid #eee;padding:6px">${d}</td>
-          <td style="border:1px solid #eee;padding:6px;text-align:right">${penceToStr(cost)}</td>
-          <td style="border:1px solid #eee;padding:6px;text-align:right">${penceToStr(vat)}</td>
-          <td style="border:1px solid #eee;padding:6px;text-align:right">${penceToStr(sub)}</td>
-        </tr>`;
+    });
+    input.addEventListener('change', ()=> {
+      if(input.files && input.files.length>0){ addFiles(input.files); input.value=''; }
+    });
+
+    function addFiles(files){
+      Array.from(files).forEach(f=>{
+        if(!f.type.startsWith('image/')) return;
+        const id = 'img_' + Math.random().toString(36).slice(2,9);
+        const url = URL.createObjectURL(f);
+        storeArray.push({id, file:f, url});
+        const thumb = document.createElement('div'); thumb.className='thumb'; thumb.dataset.id=id;
+        thumb.innerHTML = `<img src="${url}" alt=""><button title="Delete">🗑️</button>`;
+        container.appendChild(thumb);
+        thumb.querySelector('button').addEventListener('click', ()=> {
+          // remove
+          const idx = storeArray.findIndex(x=>x.id===id);
+          if(idx>=0) storeArray.splice(idx,1);
+          URL.revokeObjectURL(url);
+          thumb.remove();
+          updatePreview();
+        });
       });
-      const sTotal = sSubtotal + sVat;
-      el.innerHTML += `</tbody></table>
-        <div style="margin-top:8px;text-align:right">
-          <div>Services Subtotal: ${penceToStr(sSubtotal)}</div>
-          <div>Total VAT: ${penceToStr(sVat)}</div>
-          <div><strong>Total: ${penceToStr(sTotal)}</strong></div>
+      updatePreview();
+    }
+  }
+
+  const itemImages = [], serviceImages = [];
+  setupImageControls('item_image_input','item_image_add','item_thumbs', itemImages);
+  setupImageControls('service_image_input','service_image_add','service_thumbs', serviceImages);
+
+  // Preview builder
+  function updatePreview(){
+    // meta
+    $('generatedAt').textContent = '';
+    $('previewDate').textContent = nowStr();
+    $('previewOnline').textContent = $('online_site').value || '';
+
+    // seller
+    const seller_name = `${$('seller_first').value||''} ${$('seller_last').value||''}`.trim();
+    $('p_seller_name').textContent = seller_name;
+    $('p_seller_company').textContent = $('seller_company').value || '';
+    $('p_seller_addr').textContent = [ $('seller_prop').value, $('seller_addr1').value, $('seller_addr2').value, $('seller_addr3').value, $('seller_town').value, $('seller_county').value, $('seller_post').value, $('seller_country').value].filter(Boolean).join(', ');
+    $('p_seller_contact').textContent = ['Tel: '+($('seller_tel').value||''), $('seller_email').value || ''].filter(Boolean).join(' • ');
+
+    // buyer
+    const buyer_name = `${$('buyer_first').value||''} ${$('buyer_last').value||''}`.trim();
+    $('p_buyer_name').textContent = buyer_name;
+    $('p_buyer_company').textContent = $('buyer_company').value || '';
+    $('p_buyer_addr').textContent = [ $('buyer_prop').value, $('buyer_addr1').value, $('buyer_addr2').value, $('buyer_addr3').value, $('buyer_town').value, $('buyer_county').value, $('buyer_post').value, $('buyer_country').value].filter(Boolean).join(', ');
+    $('p_buyer_contact').textContent = ['Tel: '+($('buyer_tel').value||''), $('buyer_email').value || ''].filter(Boolean).join(' • ');
+
+    // content area
+    const previewContent = $('previewContent');
+    previewContent.innerHTML = '';
+    if(btnItem.classList.contains('active')){
+      updateItemCalc();
+      const name = $('item_name').value || '—';
+      const desc = $('item_desc').value || '';
+      const cond = $('item_condition').value || '';
+      const cost = parseFloat($('item_cost').value||0);
+      const delivery = parseFloat($('item_delivery').value||0);
+      const subtotal = cost + delivery;
+      const vat = (itemVatReg.checked ? subtotal * (parseFloat(itemVatRate.value||0)/100) : 0);
+
+      previewContent.innerHTML = `
+        <div style="font-weight:700">Item</div>
+        <div style="margin-top:6px"><strong>${escapeHtml(name)}</strong> ${cond ? '• ' + escapeHtml(cond): ''}</div>
+        <div class="small">${escapeHtml(desc)}</div>
+        <div style="margin-top:8px">
+          <div style="display:flex;justify-content:space-between"><div class="small">Cost</div><div>${money(cost)}</div></div>
+          <div style="display:flex;justify-content:space-between"><div class="small">Delivery</div><div>${money(delivery)}</div></div>
+          <div style="display:flex;justify-content:space-between"><div class="small">VAT</div><div>${money(vat)}</div></div>
+          <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:6px"><div>Total</div><div>${money(subtotal + vat)}</div></div>
         </div>
       `;
-      if(serviceImagesData.length){
-        el.innerHTML += '<div style="margin-top:8px"><strong>Service Images:</strong></div>';
-        serviceImagesData.forEach(img => {
-          el.innerHTML += `<div style="margin-top:6px"><img src="${img.dataUrl}" style="max-width:240px;max-height:180px;border:1px solid #eee;border-radius:6px"></div>`;
-        });
+    } else {
+      // service
+      updateServiceCalc();
+      const count = parseInt(serviceCount.value);
+      let html = `<div style="font-weight:700">Service</div>`;
+      for(let i=0;i<count;i++){
+        const name = $(`svc_${i}_name`).value || `Service ${i+1}`;
+        const desc = $(`svc_${i}_desc`).value || '';
+        const cost = parseFloat($(`svc_${i}_cost`).value||0);
+        html += `<div style="margin-top:8px"><strong>${escapeHtml(name)}</strong> — <span class="small">${escapeHtml(desc)}</span>
+                 <div style="display:flex;justify-content:space-between"><div class="small">Cost</div><div>${money(cost)}</div></div></div>`;
       }
+      const subtotal = parseFloat($('service_sub').textContent.replace('£','')) || 0;
+      const vat = parseFloat($('service_vat').textContent.replace('£','')) || 0;
+      html += `<div style="margin-top:10px">
+                <div style="display:flex;justify-content:space-between"><div class="small">Sub total</div><div>${money(subtotal)}</div></div>
+                <div style="display:flex;justify-content:space-between"><div class="small">VAT</div><div>${money(vat)}</div></div>
+                <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:6px"><div>Total</div><div>${money(subtotal + vat)}</div></div>
+               </div>`;
+      previewContent.innerHTML = html;
     }
 
-    // signatures
-    el.innerHTML += `<hr style="margin:10px 0"><div style="display:flex;gap:18px">
-      <div style="flex:1">
-        <div style="font-size:13px;color:#666">Seller's signature</div>
-        <div style="border:1px solid #eee;padding:8px;background:#fff;max-width:320px">
-          ${padSeller.isEmpty() ? '<div style="color:#999">No signature provided</div>' : `<img src="${padSeller.toDataURL()}" style="max-width:320px">`}
-        </div>
-      </div>
-      <div style="flex:1">
-        <div style="font-size:13px;color:#666">Buyer's signature</div>
-        <div style="border:1px solid #eee;padding:8px;background:#fff;max-width:320px">
-          ${padBuyer.isEmpty() ? '<div style="color:#999">No signature provided</div>' : `<img src="${padBuyer.toDataURL()}" style="max-width:320px">`}
-        </div>
-      </div>
-    </div>`;
+    // images (combined from itemImages or serviceImages depending on mode)
+    const previewImages = $('previewImages');
+    previewImages.innerHTML = '';
+    const imgs = (btnItem.classList.contains('active') ? itemImages : serviceImages);
+    if(imgs.length){
+      const cont = document.createElement('div');
+      cont.style.display='flex'; cont.style.gap='8px'; cont.style.flexWrap='wrap'; cont.style.marginTop='8px';
+      imgs.forEach(obj=>{
+        const el = document.createElement('img'); el.src = obj.url; el.style.width='120px'; el.style.height='90px'; el.style.objectFit='cover'; el.style.borderRadius='6px'; el.style.border='1px solid rgba(15,23,42,0.04)';
+        cont.appendChild(el);
+      });
+      previewImages.appendChild(cont);
+    }
 
-    el.innerHTML += `<div style="margin-top:16px;color:#666;font-size:12px">This document is computer generated and serves as the official receipt for the transaction described above.</div>`;
+    // signatures preview (use dataURL if present)
+    const p_sig_seller = $('p_sig_seller'), p_sig_buyer = $('p_sig_buyer');
+    p_sig_seller.innerHTML = ''; p_sig_buyer.innerHTML = '';
+    if(!sigSeller.isEmpty()){
+      const img = document.createElement('img'); img.src = sigSeller.toDataURL('image/png'); img.style.maxHeight='80px'; img.style.maxWidth='100%'; p_sig_seller.appendChild(img);
+    } else { p_sig_seller.innerHTML = '<div class="small">Not signed</div>'; }
+    if(!sigBuyer.isEmpty()){
+      const img = document.createElement('img'); img.src = sigBuyer.toDataURL('image/png'); img.style.maxHeight='80px'; img.style.maxWidth='100%'; p_sig_buyer.appendChild(img);
+    } else { p_sig_buyer.innerHTML = '<div class="small">Not signed</div>'; }
 
-    pdfArea.appendChild(el);
-
-    // Use html2canvas + jsPDF to render
-    const { jsPDF } = window.jspdf;
-
-    // hide UI so it doesn't affect rendering
-    const originalScroll = window.scrollY || 0;
-    // render the element
-    const canvas = await html2canvas(el, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff'
-    });
-
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF({
-      orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
-      unit: 'pt',
-      format: [canvas.width, canvas.height]
-    });
-
-    // add image to PDF sized to canvas
-    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-
-    // download
-    pdf.save('receipt.pdf');
+    $('generatedAt').textContent = ''; // we'll show on export
   }
 
-  // escape HTML to avoid injection into generated markup
-  function escapeHtml(str){
-    if(!str) return '';
-    return String(str).replace(/[&<>"']/g, function(m){
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
-    });
-  }
+  // Escape HTML helper
+  function escapeHtml(str){ return String(str||'').replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-  generateBtn.addEventListener('click', async (e) => {
-    generateBtn.disabled = true;
-    generateBtn.textContent = 'Generating...';
-    try{
-      await generatePDF();
-    }catch(err){
-      alert('Error generating PDF: ' + (err && err.message ? err.message : err));
+  // Initial preview
+  updatePreview();
+
+  // Preview refresh button
+  $('previewButton').addEventListener('click', updatePreview);
+
+  // Export to PDF
+  $('exportPDF').addEventListener('click', async function(){
+    updatePreview();
+
+    // Insert current timestamp into preview header
+    $('generatedAt').textContent = 'Generated: ' + nowStr();
+
+    const receiptEl = $('receipt');
+
+    // we want high quality: scale
+    const scale = 2;
+    const originalWidth = receiptEl.offsetWidth;
+    const originalHeight = receiptEl.offsetHeight;
+
+    // temporarily set background white to avoid transparency issues
+    receiptEl.style.background = 'white';
+
+    try {
+      const canvas = await html2canvas(receiptEl, {
+        scale: scale,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        windowWidth: document.documentElement.clientWidth,
+        windowHeight: document.documentElement.clientHeight
+      });
+
+      // create PDF with proper page break scaling (A4 portrait)
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      const imgData = canvas.toDataURL('image/png');
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgWidth = pageWidth - 20; // 10mm margin each side
+      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+
+      let position = 10;
+      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+      // if the content is taller than one A4, add pages (split by height)
+      if(imgHeight > pageHeight - 20){
+        // number of pages
+        const totalPages = Math.ceil(imgHeight / (pageHeight - 20));
+        for(let i=1;i<totalPages;i++){
+          pdf.addPage();
+          const y = -(pageHeight - 20) * i + 10;
+          pdf.addImage(imgData, 'PNG', 10, y, imgWidth, imgHeight);
+        }
+      }
+
+      const filename = `receipt_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.pdf`;
+      pdf.save(filename);
+    } catch (err){
+      alert('Error generating PDF: ' + err.message);
       console.error(err);
-    }finally{
-      generateBtn.disabled = false;
-      generateBtn.textContent = 'Generate Receipt (PDF)';
+    } finally {
+      receiptEl.style.background = ''; // reset
     }
   });
 
-  // initial calculations
-  recalcItemTotal();
-  recalcServicesTotals();
+  // Keep preview up-to-date on many inputs
+  const inputsToWatch = Array.from(document.querySelectorAll('input, textarea, select'));
+  inputsToWatch.forEach(el => el.addEventListener('input', ()=> {
+    // debounce slightly to avoid too many updates
+    clearTimeout(el._t); el._t = setTimeout(updatePreview, 120);
+  }));
 
-})();
+  // ensure service calc updates when vat rate changes
+  $('service_vat_rate').addEventListener('input', updateServiceCalc);
+  // also update item calc if VAT rate changes
+  $('item_vat_rate').addEventListener('input', updateItemCalc);
+
+  // Initial small calc fills
+  updateItemCalc();
+  updateServiceCalc();
+
 </script>
-
 </body>
 </html>
