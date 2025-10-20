@@ -1,205 +1,257 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Receipt Generator</title>
-
-<!-- External Libraries -->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Receipt Generator — A4 optimized</title>
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
 <style>
-/* ---------- General Styles ---------- */
-body {font-family: Arial,sans-serif; background:#f0f2f5; margin:0; padding:20px;}
-h1,h2,h3,h4,h5,h6 {margin:0;}
-.container {display:flex; flex-wrap:wrap; gap:20px; max-width:1200px; margin:0 auto;}
-.card {background:#fff; border-radius:12px; padding:20px; box-shadow:0 8px 28px rgba(0,0,0,0.05); flex:1;}
-label {display:block; font-size:13px; margin-top:10px;}
-input[type=text], input[type=email], input[type=tel], input[type=number], select, textarea {width:100%; padding:8px; border-radius:8px; border:1px solid #ccc; margin-top:4px;}
-button {cursor:pointer; border:none; border-radius:8px; padding:8px 12px; margin-top:8px;}
-button.primary {background:#1f6feb; color:#fff;}
-button.delete {background:red; color:#fff; font-size:12px; padding:2px 6px; position:absolute; top:4px; right:4px;}
-.item-row {display:grid; grid-template-columns:1fr 80px 100px 100px; gap:8px; align-items:center; margin-top:6px; position:relative;}
-.item-row input {width:100%;}
-
-/* ---------- Image thumbnails ---------- */
-.thumb-grid {display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;}
-.thumb {position:relative; width:80px; height:60px; border:1px solid #ccc; border-radius:8px; overflow:hidden;}
-.thumb img {width:100%; height:100%; object-fit:cover;}
-.thumb button {position:absolute; top:2px; right:2px;}
-
-/* ---------- Signature ---------- */
-canvas {border:1px solid #ccc; border-radius:8px; width:100%; height:100px;}
-
-/* ---------- PDF Layout ---------- */
-.receipt {width:210mm; min-height:297mm; background:#fff; padding:20mm; box-sizing:border-box; font-size:13px; margin:0 auto; color:#000;}
-.receipt header {display:flex; justify-content:space-between;}
-.receipt h2 {margin-bottom:6px;}
-.line-items {margin-top:12px;}
-.line-items table {width:100%; border-collapse:collapse;}
-.line-items th, .line-items td {border:1px solid #ccc; padding:6px;}
-.right {text-align:right;}
-.sig-line {border-bottom:1px solid #000; width:200px; text-align:center; margin-top:40px; font-size:12px;}
-.footer-vat {text-align:center; margin-top:12px; font-weight:bold;}
+:root{
+  --bg:#f6f8fb;
+  --card:#fff;
+  --muted:#6b7280;
+  --accent:#1f6feb;
+  --accent-2:#0ea5a4;
+  --radius:12px;
+  --shadow:0 8px 28px rgba(15,23,42,0.06);
+  --max-width:1100px;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color: #0f172a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,var(--bg),#eef2ff);padding:24px;display:flex;justify-content:center}
+.card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);border:1px solid rgba(15,23,42,0.04)}
+h1{margin:0;font-size:20px}
+.subtitle{color:var(--muted);font-size:13px;margin-top:6px}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+input[type="text"], input[type="email"], input[type="tel"], input[type="number"], select, textarea{
+  width:100%;padding:10px;border-radius:10px;border:1px solid rgba(15,23,42,0.08);background:#fbfdff;font-size:14px;
+}
+textarea{min-height:70px;resize:vertical}
+.sig-box{height:88px;border:1px dashed rgba(15,23,42,0.06);border-radius:6px;padding:6px;background:#fbfdff;display:flex;align-items:center;justify-content:center;position:relative;}
+.sig-box::after{content:'';position:absolute;bottom:4px;left:6px;right:6px;height:1px;background:#0f172a33;}
+.small{font-size:12px;color:var(--muted)}
+.table-responsive{overflow-x:auto;}
+.line-items table{width:100%;border-collapse:collapse;margin-top:10px}
+.line-items th, .line-items td{padding:8px;border:1px solid rgba(15,23,42,0.06);text-align:left;font-size:13px}
+.line-items th{background:#fbfdff;font-weight:700}
+.right{text-align:right}
+.thumb-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.thumb{position:relative;width:86px;height:66px;border-radius:8px;overflow:hidden;border:1px solid rgba(15,23,42,0.06)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb button{position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.6);border:0;color:white;border-radius:6px;padding:3px 6px;cursor:pointer;font-size:12px}
 </style>
 </head>
 <body>
+<div style="width:100%;max-width:var(--max-width);display:grid;grid-template-columns:1fr 440px;gap:20px">
+  <!-- LEFT FORM -->
+  <main class="card">
+    <form id="mainForm" onsubmit="return false;">
+      <div>
+        <h2>Seller Information</h2>
+        <label>First name<input type="text" id="seller_first"></label>
+        <label>Last name<input type="text" id="seller_last"></label>
+        <label>Email<input type="email" id="seller_email"></label>
+      </div>
+      <div>
+        <h2>Buyer Information</h2>
+        <label>First name<input type="text" id="buyer_first"></label>
+        <label>Last name<input type="text" id="buyer_last"></label>
+        <label>Email<input type="email" id="buyer_email"></label>
+      </div>
+      <div>
+        <h2>Items</h2>
+        <label>Number of items
+          <select id="item_count">
+            <script>for(let i=1;i<=10;i++){document.write('<option>'+i+'</option>')}</script>
+          </select>
+        </label>
+        <label>Delivery (£)<input type="number" id="item_delivery" value="0" step="0.01"></label>
+        <label><input type="checkbox" id="item_vat_reg"> VAT Registered</label>
+        <input type="text" id="item_vat_num" placeholder="VAT number" style="display:none;width:200px">
+        <select id="item_vat_rate" style="display:none;width:100px">
+          <option value="0">0%</option><option value="5">5%</option><option value="12.5">12.5%</option><option value="20" selected>20%</option>
+        </select>
+        <div id="item_rows"></div>
+        <div id="item_subtotal"></div>
+      </div>
+      <div>
+        <h2>Signatures</h2>
+        <div style="display:flex;gap:12px">
+          <div>
+            <div>Seller</div>
+            <canvas id="sig_seller" style="width:100%;height:120px"></canvas>
+            <button type="button" onclick="sellerSig.clear()">Clear</button>
+          </div>
+          <div>
+            <div>Buyer</div>
+            <canvas id="sig_buyer" style="width:100%;height:120px"></canvas>
+            <button type="button" onclick="buyerSig.clear()">Clear</button>
+          </div>
+        </div>
+      </div>
+      <button id="exportPDF" type="button">Generate PDF</button>
+    </form>
+  </main>
 
-<div class="container">
-
-<!-- Left Form Card -->
-<div class="card">
-<h2>Seller & Buyer Information</h2>
-
-<form id="receiptForm">
-
-<!-- Seller -->
-<h3>Seller</h3>
-<label>First Name<input type="text" id="seller_first"></label>
-<label>Last Name<input type="text" id="seller_last"></label>
-<label>Property Number/Name<input type="text" id="seller_prop"></label>
-<label>Company<input type="text" id="seller_company"></label>
-<label>Address Line 1<input type="text" id="seller_addr1"></label>
-<label>Address Line 2<input type="text" id="seller_addr2"></label>
-<label>Town<input type="text" id="seller_town"></label>
-<label>County<input type="text" id="seller_county"></label>
-<label>Post Code<input type="text" id="seller_post"></label>
-<label>Country<input type="text" id="seller_country"></label>
-<label>Telephone<input type="tel" id="seller_tel"></label>
-<label>Email<input type="email" id="seller_email"></label>
-
-<!-- Buyer -->
-<h3>Buyer</h3>
-<label>First Name<input type="text" id="buyer_first"></label>
-<label>Last Name<input type="text" id="buyer_last"></label>
-<label>Property Number/Name<input type="text" id="buyer_prop"></label>
-<label>Company<input type="text" id="buyer_company"></label>
-<label>Address Line 1<input type="text" id="buyer_addr1"></label>
-<label>Address Line 2<input type="text" id="buyer_addr2"></label>
-<label>Town<input type="text" id="buyer_town"></label>
-<label>County<input type="text" id="buyer_county"></label>
-<label>Post Code<input type="text" id="buyer_post"></label>
-<label>Country<input type="text" id="buyer_country"></label>
-<label>Telephone<input type="tel" id="buyer_tel"></label>
-<label>Email<input type="email" id="buyer_email"></label>
-
-<!-- Purchase Details -->
-<h3>Purchase Details</h3>
-<label>Online Site<input type="text" id="online_site"></label>
-<label>Type
-<select id="purchase_type">
-<option value="item">Item</option>
-<option value="service">Service</option>
-</select>
-</label>
-
-<!-- Item Quantity -->
-<label>Number of Items/Services
-<select id="num_items"></select>
-</label>
-
-<div id="items_container"></div>
-
-<!-- VAT -->
-<label><input type="checkbox" id="vat_registered"> VAT Registered</label>
-<label>VAT Number<input type="text" id="vat_number" placeholder="Enter VAT Number"></label>
-<label>VAT Rate (%)<input type="number" id="vat_rate" value="20"></label>
-
-<!-- Signatures -->
-<h3>Signatures</h3>
-<label>Seller Signature</label>
-<canvas id="sig_seller"></canvas>
-<button type="button" onclick="clearSig('seller')">Clear</button>
-
-<label>Buyer Signature</label>
-<canvas id="sig_buyer"></canvas>
-<button type="button" onclick="clearSig('buyer')">Clear</button>
-
-<button type="button" class="primary" onclick="generatePDF()">Generate PDF</button>
-
-</form>
-</div>
+  <!-- RIGHT PREVIEW -->
+  <aside class="card">
+    <h2>Preview</h2>
+    <div class="preview" id="receipt">
+      <div>
+        <div><strong>Seller</strong><div id="p_seller_contact"></div></div>
+        <div><strong>Buyer</strong><div id="p_buyer_contact"></div></div>
+      </div>
+      <div class="line-items" id="items_table_container"></div>
+      <div>
+        <div>Seller Signature<div id="p_sig_seller" class="sig-box small">Not signed</div></div>
+        <div>Buyer Signature<div id="p_sig_buyer" class="sig-box small">Not signed</div></div>
+      </div>
+    </div>
+  </aside>
 </div>
 
 <script>
-// ---------- Dynamic item rows ----------
-const numItemsSelect = document.getElementById('num_items');
-for(let i=1;i<=10;i++){
-    let opt=document.createElement('option'); opt.value=i; opt.text=i; numItemsSelect.appendChild(opt);
-}
-const itemsContainer = document.getElementById('items_container');
-numItemsSelect.addEventListener('change',renderItems);
-document.getElementById('purchase_type').addEventListener('change',renderItems);
+const $ = id=>document.getElementById(id);
+const money = n=>'£'+(Number(n||0)).toFixed(2);
 
-function renderItems(){
-    itemsContainer.innerHTML='';
-    let num = parseInt(numItemsSelect.value);
-    let type = document.getElementById('purchase_type').value;
-    for(let i=1;i<=num;i++){
-        let div = document.createElement('div'); div.className='item-row';
-        div.innerHTML=`
-        <input type="text" placeholder="${type} Name">
-        <input type="number" placeholder="Quantity" value="1" min="1">
-        <input type="number" placeholder="Cost (£)" value="0">
-        <input type="text" placeholder="Description">
-        `;
-        itemsContainer.appendChild(div);
+const sellerCanvas=$('sig_seller'), buyerCanvas=$('sig_buyer');
+function resizeCanvas(c){const ratio=Math.max(window.devicePixelRatio||1,1);c.width=c.clientWidth*ratio;c.height=c.clientHeight*ratio;c.getContext('2d').scale(ratio,ratio);}
+resizeCanvas(sellerCanvas); resizeCanvas(buyerCanvas);
+const sellerSig=new SignaturePad(sellerCanvas,{penColor:"rgb(20,20,20)"}), buyerSig=new SignaturePad(buyerCanvas,{penColor:"rgb(20,20,20)"});
+
+const itemCountSelect=$('item_count'), itemRows=$('item_rows');
+const itemImagesStore={};
+function createItemRow(idx){
+  const id='item_'+idx;
+  const wrapper=document.createElement('div');
+  wrapper.style.border='1px solid rgba(15,23,42,0.04)';
+  wrapper.style.padding='10px';
+  wrapper.style.borderRadius='8px';
+  wrapper.innerHTML=`
+  <div><strong>Item ${idx}</strong></div>
+  <div style="display:flex;gap:8px">
+    <input id="${id}_name" placeholder="Item name">
+    <input id="${id}_qty" type="number" min="1" value="1" style="width:60px">
+    <input id="${id}_cost" type="number" step="0.01" min="0" value="0" style="width:80px">
+    <div style="width:200px">
+      <input id="${id}_img_input" type="file" multiple>
+      <div class="thumb-grid" id="${id}_thumbs"></div>
+    </div>
+  </div>`;
+  return wrapper;
+}
+function renderItemRows(count){
+  itemRows.innerHTML='';
+  for(let i=1;i<=count;i++){
+    const row=createItemRow(i);
+    itemRows.appendChild(row);
+    const lid='item_'+i;
+    itemImagesStore[lid]=itemImagesStore[lid]||[];
+    $(`${lid}_qty`).addEventListener('input',updatePreview);
+    $(`${lid}_cost`).addEventListener('input',updatePreview);
+    $(`${lid}_name`).addEventListener('input',updatePreview);
+    const input=$(`${lid}_img_input`), thumbs=$(`${lid}_thumbs`);
+    input.addEventListener('change',e=>{
+      Array.from(e.target.files||[]).forEach(f=>{
+        if(!f.type.startsWith('image/'))return;
+        const iid=lid+'_'+Math.random().toString(36).slice(2,9);
+        const url=URL.createObjectURL(f);
+        itemImagesStore[lid].push({id:iid,file:f,url});
+        const t=document.createElement('div'); t.className='thumb'; t.dataset.id=iid;
+        t.innerHTML=`<img src="${url}"><button title="Delete">🗑️</button>`;
+        thumbs.appendChild(t);
+        t.querySelector('button').addEventListener('click',()=>{itemImagesStore[lid]=itemImagesStore[lid].filter(x=>x.id!==iid); t.remove(); updatePreview();});
+      });
+      input.value='';
+      updatePreview();
+    });
+  }
+}
+itemCountSelect.addEventListener('change',()=>{renderItemRows(parseInt(itemCountSelect.value)); updatePreview();});
+renderItemRows(parseInt(itemCountSelect.value));
+
+$('item_vat_reg').addEventListener('change',()=>{
+  const on=$('item_vat_reg').checked;
+  $('item_vat_num').style.display=on?'inline-block':'none';
+  $('item_vat_rate').style.display=on?'inline-block':'none';
+  updatePreview();
+});
+$('item_vat_rate').addEventListener('change',updatePreview);
+
+function updatePreview(){
+  $('p_seller_contact').textContent=['Email: '+($('seller_email').value||'')].filter(Boolean).join(' • ');
+  $('p_buyer_contact').textContent=['Email: '+($('buyer_email').value||'')].filter(Boolean).join(' • ');
+
+  const itemsContainer=$('items_table_container');
+  itemsContainer.innerHTML='';
+  const count=parseInt(itemCountSelect.value);
+  let subtotal=0;
+  const tbl=document.createElement('table');
+  tbl.innerHTML=`<thead><tr><th>#</th><th>Item</th><th>Qty</th><th>Unit (£)</th><th>Line (£)</th></tr></thead>`;
+  const tbody=document.createElement('tbody');
+  for(let i=1;i<=count;i++){
+    const name=$(`item_${i}_name`).value||'';
+    const qty=parseFloat($(`item_${i}_qty`).value||0);
+    const cost=parseFloat($(`item_${i}_cost`).value||0);
+    const lineTotal=qty*cost;
+    subtotal+=lineTotal;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${i}</td><td>${name}</td><td class="right">${qty}</td><td class="right">${money(cost)}</td><td class="right">${money(lineTotal)}</td>`;
+    tbody.appendChild(tr);
+  }
+  tbl.appendChild(tbody);
+  itemsContainer.appendChild(tbl);
+  const vat=$('item_vat_reg').checked?(subtotal)*parseFloat($('item_vat_rate').value||0)/100:0;
+  const delivery=parseFloat($('item_delivery').value||0);
+  const total=subtotal+vat+delivery;
+  const totalDiv=document.createElement('div');
+  totalDiv.innerHTML=`Subtotal: ${money(subtotal)}, VAT: ${money(vat)}, Delivery: ${money(delivery)}, Total: ${money(total)}`;
+  itemsContainer.appendChild(totalDiv);
+
+  const pSigSeller=$('p_sig_seller'), pSigBuyer=$('p_sig_buyer');
+  pSigSeller.innerHTML=''; pSigBuyer.innerHTML='';
+  if(!sellerSig.isEmpty()){ const img=document.createElement('img'); img.src=sellerSig.toDataURL(); img.style.maxHeight='80px'; img.style.maxWidth='100%'; pSigSeller.appendChild(img);}else pSigSeller.innerHTML='Not signed';
+  if(!buyerSig.isEmpty()){ const img=document.createElement('img'); img.src=buyerSig.toDataURL(); img.style.maxHeight='80px'; img.style.maxWidth='100%'; pSigBuyer.appendChild(img);}else pSigBuyer.innerHTML='Not signed';
+}
+document.querySelectorAll('input,textarea').forEach(i=>i.addEventListener('input',updatePreview));
+updatePreview();
+
+// PDF export
+$('exportPDF').addEventListener('click',async()=>{
+  const receipt=$('receipt');
+  const canvas=await html2canvas(receipt, {scale:2, useCORS:true});
+  const imgData=canvas.toDataURL('image/png');
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({unit:'pt', format:'a4'});
+  const pageWidth=pdf.internal.pageSize.getWidth();
+  const pageHeight=pdf.internal.pageSize.getHeight();
+  const imgWidth=pageWidth-40;
+  const imgHeight=canvas.height * imgWidth / canvas.width;
+  let y=20;
+  if(imgHeight<pageHeight-40){
+    pdf.addImage(imgData,'PNG',20,y,imgWidth,imgHeight);
+  }else{
+    let position=0;
+    while(position<imgHeight){
+      pdf.addImage(imgData,'PNG',20,y,imgWidth,imgWidth*canvas.height/canvas.width,position,pageWidth,imgHeight);
+      position+=pageHeight-40;
+      if(position<imgHeight) pdf.addPage();
     }
-}
-renderItems();
-
-// ---------- Signature ----------
-let sigSeller = new SignaturePad(document.getElementById('sig_seller'));
-let sigBuyer = new SignaturePad(document.getElementById('sig_buyer'));
-function clearSig(who){if(who==='seller')sigSeller.clear(); else sigBuyer.clear();}
-
-// ---------- PDF Generation ----------
-async function generatePDF(){
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({unit:'mm', format:'a4'});
-    const pageWidth = 210; const margin=20;
-
-    // Seller / Buyer Info
-    doc.setFontSize(12);
-    doc.text('Seller:',margin,20);
-    doc.text('Buyer:',pageWidth/2,20);
-    let sellerName = document.getElementById('seller_first').value + ' ' + document.getElementById('seller_last').value;
-    let buyerName = document.getElementById('buyer_first').value + ' ' + document.getElementById('buyer_last').value;
-    doc.text(sellerName,margin,28);
-    doc.text(buyerName,pageWidth/2,28);
-    doc.text('Email: '+document.getElementById('seller_email').value,margin,34);
-    doc.text('Email: '+document.getElementById('buyer_email').value,pageWidth/2,34);
-
-    // Items Table
-    const items = itemsContainer.querySelectorAll('.item-row');
-    let startY=50;
-    doc.setFontSize(12);
-    doc.text('Items/Services:',margin,startY);
-    startY+=6;
-    doc.autoTable({ startY:startY, head:[['Name','Qty','Cost (£)','Description']], body: Array.from(items).map(r=>{
-        return [r.children[0].value,r.children[1].value,r.children[2].value,r.children[3].value];
-    })});
-    
-    // VAT Footer
-    const vatRegistered=document.getElementById('vat_registered').checked;
-    if(vatRegistered){
-        let vatNum = document.getElementById('vat_number').value;
-        doc.setFontSize(12);
-        doc.text('VAT Number: '+vatNum,pageWidth/2,290,{align:'center'});
+  }
+  if($('item_vat_reg').checked){
+    const vatNum=$('item_vat_num').value;
+    const pages=pdf.getNumberOfPages();
+    pdf.setFontSize(10);
+    for(let i=1;i<=pages;i++){
+      pdf.setPage(i);
+      pdf.text(vatNum||'',pageWidth/2,pageHeight-10,{align:'center'});
     }
-
-    // Signatures
-    const sigSellerImg = sigSeller.toDataURL();
-    const sigBuyerImg = sigBuyer.toDataURL();
-    doc.addImage(sigSellerImg,'PNG',margin,200,80,30);
-    doc.text('Seller Signature',margin,235);
-    doc.addImage(sigBuyerImg,'PNG',pageWidth/2,200,80,30);
-    doc.text('Buyer Signature',pageWidth/2,235);
-
-    doc.save('receipt.pdf');
-}
+  }
+  pdf.save('receipt.pdf');
+});
 </script>
 </body>
 </html>
