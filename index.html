@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Receipt Generator</title>
+  <title>Receipt Generator — A4 optimized</title>
 
-  <!-- External libs (CDN) -->
+  <!-- CDN libs -->
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -13,75 +13,88 @@
   <style>
     :root{
       --bg:#f6f8fb;
-      --card:#ffffff;
+      --card:#fff;
       --muted:#6b7280;
-      --accent:#2563eb;
+      --accent:#1f6feb;
       --accent-2:#0ea5a4;
-      --radius:14px;
-      --shadow: 0 8px 30px rgba(34,41,47,0.06);
+      --radius:12px;
+      --shadow: 0 8px 28px rgba(15,23,42,0.06);
+      --max-width:1100px;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      color: #0f172a;
     }
     *{box-sizing:border-box}
-    body{margin:0;background:linear-gradient(180deg,var(--bg),#eef2ff);padding:24px;color:#0f172a}
-    .container{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 420px;gap:20px;align-items:start}
-    .card{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);border:1px solid rgba(15,23,42,0.04)}
-    header{grid-column:1/-1;margin-bottom:4px}
+    body{margin:0;background:linear-gradient(180deg,var(--bg),#eef2ff);padding:24px;display:flex;justify-content:center}
+    .app{width:100%;max-width:var(--max-width);display:grid;grid-template-columns:1fr 440px;gap:20px}
+    .card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);border:1px solid rgba(15,23,42,0.04)}
+    header{grid-column:1/-1;margin-bottom:6px}
     h1{margin:0;font-size:20px}
     .subtitle{color:var(--muted);font-size:13px;margin-top:6px}
 
-    /* Form layout */
+    /* form */
     .form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
     .full{grid-column:1/-1}
     label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
     input[type="text"], input[type="email"], input[type="tel"], input[type="number"], select, textarea{
       width:100%;padding:10px;border-radius:10px;border:1px solid rgba(15,23,42,0.08);background:#fbfdff;font-size:14px;
     }
-    textarea{min-height:80px;resize:vertical}
+    textarea{min-height:70px;resize:vertical}
     .segmented{display:flex;background:#f3f4f6;border-radius:10px;overflow:hidden}
-    .segmented button{flex:1;padding:8px 12px;border:0;background:transparent;cursor:pointer;font-weight:600}
+    .segmented button{flex:1;padding:8px 12px;border:0;background:transparent;cursor:pointer;font-weight:700}
     .segmented button.active{background:linear-gradient(90deg,var(--accent),#4f46e5);color:white}
 
-    .row{display:flex;gap:8px;align-items:center}
+    .section-title{font-weight:800;margin:6px 0 10px}
     .muted{color:var(--muted);font-size:13px}
+    .row{display:flex;gap:8px;align-items:center}
 
     /* thumbnails */
     .thumb-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-    .thumb{position:relative;width:88px;height:68px;border-radius:8px;overflow:hidden;border:1px solid rgba(15,23,42,0.06)}
+    .thumb{position:relative;width:86px;height:66px;border-radius:8px;overflow:hidden;border:1px solid rgba(15,23,42,0.06)}
     .thumb img{width:100%;height:100%;object-fit:cover;display:block}
     .thumb button{position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.6);border:0;color:white;border-radius:6px;padding:3px 6px;cursor:pointer;font-size:12px}
 
-    .section-title{font-weight:700;margin:6px 0 10px}
     .calc{background:#f8fafc;padding:10px;border-radius:10px;border:1px solid rgba(15,23,42,0.03);display:flex;gap:12px;flex-direction:column}
     .calc .line{display:flex;justify-content:space-between;font-size:14px}
-    .actions{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+    .actions{display:flex;gap:8px;align-items:center}
     button.primary{background:var(--accent);border:0;color:white;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:700}
     button.ghost{background:transparent;border:1px solid rgba(15,23,42,0.06);padding:8px 10px;border-radius:8px;cursor:pointer}
 
-    /* receipt preview */
+    /* receipt preview — optimized to A4 ratio */
     .preview{overflow:auto}
-    .receipt{width:100%;background:white;border-radius:10px;padding:14px;border:1px solid rgba(15,23,42,0.03)}
+    .receipt{width:210mm; /* matches A4 width for on-screen layout */ background:white;border-radius:6px;padding:18mm;box-shadow:none;margin:0 auto;color:#0f172a; font-size:13px; border:1px solid rgba(15,23,42,0.04)}
+    .receipt header{display:flex;justify-content:space-between;align-items:flex-start}
+    .r-title{font-size:20px;font-weight:800}
+    .r-meta{font-size:12px;color:var(--muted)}
     .two-col{display:flex;gap:12px}
-    .sig-canvas{border:1px dashed rgba(15,23,42,0.06);height:120px;border-radius:8px;width:100%}
+    .line-items table{width:100%;border-collapse:collapse;margin-top:10px}
+    .line-items th, .line-items td{padding:8px;border:1px solid rgba(15,23,42,0.06);text-align:left;font-size:13px}
+    .line-items th{background:#fbfdff;font-weight:700}
+    .right{text-align:right}
+    .sig-box{height:88px;border:1px dashed rgba(15,23,42,0.06);border-radius:6px;padding:6px;background:#fbfdff;display:flex;align-items:center;justify-content:center}
     .sig-actions{display:flex;gap:8px;justify-content:center;margin-top:6px}
-    .small{font-size:13px;color:var(--muted)}
+
+    .small{font-size:12px;color:var(--muted)}
 
     /* responsive */
-    @media (max-width: 980px){
-      .container{grid-template-columns:1fr; padding-bottom:60px}
-      .form-grid{grid-template-columns:repeat(1,1fr)}
+    @media (max-width: 1100px){
+      .app{grid-template-columns:1fr}
+      .receipt{width:100%;padding:16px}
     }
+
+    /* small helpers for input sizing in item rows */
+    .item-row{display:grid;grid-template-columns:1fr 140px 80px 100px;gap:8px;align-items:start}
+    .item-row .col-full{grid-column:1/-1}
   </style>
 </head>
 <body>
-
-  <div class="container">
+  <div class="app">
     <header class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
-          <h1>Receipt Generator</h1>
-          <div class="subtitle">Fill seller/buyer info, choose Item or Service, attach images, capture signatures and export as PDF.</div>
+          <h1>Receipt Generator (A4-ready)</h1>
+          <div class="subtitle">Multiple different items, per-line quantity & images, VAT, signatures, PDF export.</div>
         </div>
-        <div class="small">Client-side only • No server required</div>
+        <div class="small">Client-side only</div>
       </div>
     </header>
 
@@ -89,6 +102,7 @@
     <main class="card" id="left">
       <form id="mainForm" onsubmit="return false;">
         <div class="form-grid">
+
           <!-- Seller -->
           <div>
             <div class="section-title">Seller Information</div>
@@ -98,7 +112,6 @@
             <label>Company (if applicable)<input type="text" id="seller_company"></label>
             <label>Address line 1<input type="text" id="seller_addr1"></label>
             <label>Address line 2<input type="text" id="seller_addr2"></label>
-            <label>Address line 3<input type="text" id="seller_addr3"></label>
             <label>Town<input type="text" id="seller_town"></label>
             <label>County<input type="text" id="seller_county"></label>
             <label>Post code<input type="text" id="seller_post"></label>
@@ -116,7 +129,6 @@
             <label>Company (if applicable)<input type="text" id="buyer_company"></label>
             <label>Address line 1<input type="text" id="buyer_addr1"></label>
             <label>Address line 2<input type="text" id="buyer_addr2"></label>
-            <label>Address line 3<input type="text" id="buyer_addr3"></label>
             <label>Town<input type="text" id="buyer_town"></label>
             <label>County<input type="text" id="buyer_county"></label>
             <label>Post code<input type="text" id="buyer_post"></label>
@@ -125,7 +137,7 @@
             <label>Email<input type="email" id="buyer_email"></label>
           </div>
 
-          <!-- Full row: purchase meta -->
+          <!-- Purchase meta -->
           <div class="full">
             <div class="section-title">Purchase</div>
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -146,43 +158,39 @@
 
           <!-- Item block -->
           <div id="itemBlock" class="full">
-            <div class="section-title">Item Details</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-              <label>Item Name<input type="text" id="item_name"></label>
-              <label>Condition<input type="text" id="item_condition" placeholder="New / Used"></label>
-              <label class="full">Description<textarea id="item_desc"></textarea></label>
-              <label>Item Cost (£)<input type="number" id="item_cost" step="0.01" value="0"></label>
-              <label>Delivery Charge (£)<input type="number" id="item_delivery" step="0.01" value="0"></label>
-              <div style="display:flex;flex-direction:column;gap:6px">
-                <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="item_vat_reg"> VAT Registered</label>
-                <input type="text" id="item_vat_num" placeholder="VAT number (if registered)" style="display:none">
-                <div style="display:flex;gap:8px;align-items:center">
-                  <select id="item_vat_rate" style="width:120px;display:none">
-                    <option value="0">0%</option>
-                    <option value="5">5%</option>
-                    <option value="12.5">12.5%</option>
-                    <option value="20" selected>20%</option>
-                  </select>
-                  <div class="muted" id="item_vat_amount">VAT to add: £0.00</div>
-                </div>
-              </div>
+            <div class="section-title">Items</div>
+
+            <div class="row" style="gap:12px;align-items:center;margin-bottom:8px">
+              <label>How many different line items
+                <select id="item_count" style="margin-left:8px">
+                  <!-- options 1..10 -->
+                  <script>for(let i=1;i<=10;i++){document.write('<option>'+i+'</option>')}</script>
+                </select>
+              </label>
+
+              <label style="margin-left:12px">Delivery charge (£)
+                <input type="number" id="item_delivery" value="0" step="0.01" style="width:140px;margin-left:8px">
+              </label>
+
+              <label style="margin-left:auto;display:flex;align-items:center;gap:8px">
+                <input type="checkbox" id="item_vat_reg"> VAT Registered
+              </label>
+
+              <input type="text" id="item_vat_num" placeholder="VAT number" style="display:none;width:220px">
+              <select id="item_vat_rate" style="display:none;width:120px">
+                <option value="0">0%</option><option value="5">5%</option><option value="12.5">12.5%</option><option value="20" selected>20%</option>
+              </select>
             </div>
 
-            <div style="display:flex;gap:12px;align-items:center;margin-top:10px;flex-wrap:wrap">
-              <div>
-                <label class="muted">Upload image(s)</label>
-                <div style="display:flex;gap:8px;align-items:center">
-                  <input id="item_image_input" type="file" accept="image/*" multiple>
-                  <button id="item_image_add" class="ghost" type="button">Add</button>
-                </div>
-                <div class="thumb-grid" id="item_thumbs"></div>
-              </div>
+            <div id="item_rows" style="display:grid;gap:10px"></div>
 
-              <div style="margin-left:auto;min-width:220px">
+            <div style="display:flex;gap:12px;align-items:center;margin-top:10px">
+              <div style="margin-left:auto;min-width:260px">
                 <div class="calc">
-                  <div class="line"><div class="muted">Subtotal</div><div id="item_sub">£0.00</div></div>
+                  <div class="line"><div class="muted">Sub total</div><div id="item_sub">£0.00</div></div>
                   <div class="line"><div class="muted">VAT</div><div id="item_vat">£0.00</div></div>
-                  <div class="line" style="font-weight:700"><div>Total</div><div id="item_total">£0.00</div></div>
+                  <div class="line"><div class="muted">Delivery</div><div id="item_delivery_disp">£0.00</div></div>
+                  <div class="line" style="font-weight:800"><div>Total</div><div id="item_total">£0.00</div></div>
                 </div>
               </div>
             </div>
@@ -190,45 +198,33 @@
 
           <!-- Service block -->
           <div id="serviceBlock" class="full" style="display:none">
-            <div class="section-title">Service Details</div>
+            <div class="section-title">Services</div>
 
-            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-              <label style="display:flex;gap:8px;align-items:center">
-                <input type="checkbox" id="service_vat_reg"> VAT Registered
-              </label>
-              <input type="text" id="service_vat_num" placeholder="VAT number" style="display:none">
-              <select id="service_vat_rate" style="display:none">
-                <option value="0">0%</option>
-                <option value="5">5%</option>
-                <option value="12.5">12.5%</option>
-                <option value="20" selected>20%</option>
-              </select>
-
-              <label style="margin-left:auto">How many service items
-                <select id="service_count">
-                  <!-- 1..10 -->
-                  <script>for(let i=1;i<=10;i++){document.write(`<option>${i}</option>`)};</script>
+            <div class="row" style="gap:12px;align-items:center;margin-bottom:8px">
+              <label>How many service items
+                <select id="service_count" style="margin-left:8px">
+                  <script>for(let i=1;i<=10;i++){document.write('<option>'+i+'</option>')}</script>
                 </select>
               </label>
+
+              <label style="margin-left:auto;display:flex;align-items:center;gap:8px">
+                <input type="checkbox" id="service_vat_reg"> VAT Registered
+              </label>
+
+              <input type="text" id="service_vat_num" placeholder="VAT number" style="display:none;width:220px">
+              <select id="service_vat_rate" style="display:none;width:120px">
+                <option value="0">0%</option><option value="5">5%</option><option value="12.5">12.5%</option><option value="20" selected>20%</option>
+              </select>
             </div>
 
-            <div id="service_items" style="margin-top:12px;display:grid;gap:10px"></div>
+            <div id="service_rows" style="display:grid;gap:10px"></div>
 
-            <div style="display:flex;gap:12px;align-items:center;margin-top:10px;flex-wrap:wrap">
-              <div>
-                <label class="muted">Upload image(s) of service</label>
-                <div style="display:flex;gap:8px;align-items:center">
-                  <input id="service_image_input" type="file" accept="image/*" multiple>
-                  <button id="service_image_add" class="ghost" type="button">Add</button>
-                </div>
-                <div class="thumb-grid" id="service_thumbs"></div>
-              </div>
-
-              <div style="margin-left:auto;min-width:220px">
+            <div style="display:flex;gap:12px;align-items:center;margin-top:10px">
+              <div style="margin-left:auto;min-width:260px">
                 <div class="calc">
                   <div class="line"><div class="muted">Sub total</div><div id="service_sub">£0.00</div></div>
                   <div class="line"><div class="muted">VAT</div><div id="service_vat">£0.00</div></div>
-                  <div class="line" style="font-weight:700"><div>Total</div><div id="service_total">£0.00</div></div>
+                  <div class="line" style="font-weight:800"><div>Total</div><div id="service_total">£0.00</div></div>
                 </div>
               </div>
             </div>
@@ -242,12 +238,12 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
             <div>
               <div class="small">Seller Signature</div>
-              <canvas id="sig_seller" class="sig-canvas"></canvas>
+              <canvas id="sig_seller" style="width:100%;height:120px;border:1px dashed rgba(15,23,42,0.06);border-radius:8px"></canvas>
               <div class="sig-actions"><button id="seller_clear" class="ghost" type="button">Clear</button></div>
             </div>
             <div>
               <div class="small">Buyer Signature</div>
-              <canvas id="sig_buyer" class="sig-canvas"></canvas>
+              <canvas id="sig_buyer" style="width:100%;height:120px;border:1px dashed rgba(15,23,42,0.06);border-radius:8px"></canvas>
               <div class="sig-actions"><button id="buyer_clear" class="ghost" type="button">Clear</button></div>
             </div>
           </div>
@@ -257,338 +253,479 @@
           <button id="previewButton" class="ghost" type="button">Refresh Preview</button>
           <button id="exportPDF" class="primary" type="button">Generate Receipt (PDF)</button>
         </div>
-
       </form>
     </main>
 
-    <!-- RIGHT: Preview -->
-    <aside class="card" id="right">
+    <!-- RIGHT: Preview (A4 layout) -->
+    <aside class="card">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><strong>Receipt Preview</strong><div class="small">This is what will be exported to PDF.</div></div>
+        <div><strong>Receipt Preview</strong><div class="small">This will be exported to A4 PDF</div></div>
         <div class="small" id="generatedAt"></div>
       </div>
 
       <div style="margin-top:12px" class="preview">
         <div id="receipt" class="receipt">
-          <!-- receipt contents built by JS -->
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <header>
             <div>
-              <h3 style="margin:0">Receipt</h3>
-              <div class="small" id="previewDate"></div>
+              <div class="r-title">Receipt</div>
+              <div class="r-meta" id="previewDate"></div>
             </div>
             <div style="text-align:right">
               <div class="small">Online site</div>
-              <div id="previewOnline" style="font-weight:700"></div>
+              <div id="previewOnline" style="font-weight:800"></div>
             </div>
-          </div>
+          </header>
 
-          <div style="margin-top:12px" class="two-col">
+          <section style="margin-top:14px" class="two-col">
             <div style="flex:1">
-              <div style="font-weight:700">Seller</div>
+              <div style="font-weight:800">Seller</div>
               <div id="p_seller_name"></div>
-              <div id="p_seller_company" class="small"></div>
-              <div id="p_seller_addr" class="small"></div>
-              <div id="p_seller_contact" class="small"></div>
+              <div class="small" id="p_seller_company"></div>
+              <div class="small" id="p_seller_addr"></div>
+              <div class="small" id="p_seller_contact"></div>
             </div>
             <div style="flex:1">
-              <div style="font-weight:700">Buyer</div>
+              <div style="font-weight:800">Buyer</div>
               <div id="p_buyer_name"></div>
-              <div id="p_buyer_company" class="small"></div>
-              <div id="p_buyer_addr" class="small"></div>
-              <div id="p_buyer_contact" class="small"></div>
+              <div class="small" id="p_buyer_company"></div>
+              <div class="small" id="p_buyer_addr"></div>
+              <div class="small" id="p_buyer_contact"></div>
             </div>
-          </div>
+          </section>
 
-          <hr style="margin:12px 0">
+          <section style="margin-top:16px" class="line-items">
+            <div id="items_table_container"></div>
+            <div id="services_table_container"></div>
+          </section>
 
-          <div id="previewContent"></div>
+          <section id="previewImages" style="margin-top:12px"></section>
 
-          <div style="margin-top:12px" id="previewImages"></div>
-
-          <div style="margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <section style="margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
             <div>
               <div class="small">Seller Signature</div>
-              <div id="p_sig_seller" style="border:1px solid rgba(15,23,42,0.04);height:80px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#fbfdff"></div>
+              <div id="p_sig_seller" class="sig-box small">Not signed</div>
             </div>
             <div>
               <div class="small">Buyer Signature</div>
-              <div id="p_sig_buyer" style="border:1px solid rgba(15,23,42,0.04);height:80px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#fbfdff"></div>
+              <div id="p_sig_buyer" class="sig-box small">Not signed</div>
             </div>
-          </div>
+          </section>
 
         </div>
       </div>
-
     </aside>
   </div>
 
 <script>
-  // Utility
-  const $ = (id) => document.getElementById(id);
-  const money = (n) => '£' + Number(n || 0).toFixed(2);
+  /* ========= Utilities ========= */
+  const $ = id => document.getElementById(id);
+  const money = n => '£' + (Number(n || 0)).toFixed(2);
   const nowStr = () => new Date().toLocaleString();
 
-  // Mode toggle
+  /* ========= Mode toggle: Item vs Service ========= */
   const btnItem = $('btnItem'), btnService = $('btnService'), itemBlock = $('itemBlock'), serviceBlock = $('serviceBlock');
   btnItem.addEventListener('click', () => { btnItem.classList.add('active'); btnService.classList.remove('active'); itemBlock.style.display='block'; serviceBlock.style.display='none'; updatePreview(); });
   btnService.addEventListener('click', () => { btnService.classList.add('active'); btnItem.classList.remove('active'); itemBlock.style.display='none'; serviceBlock.style.display='block'; updatePreview(); });
 
-  // Signatures
-  const sigSellerCanvas = $('sig_seller');
-  const sigBuyerCanvas = $('sig_buyer');
-  function fitCanvas(can){ can.width = can.clientWidth * devicePixelRatio; can.height = can.clientHeight * devicePixelRatio; const ctx=can.getContext('2d'); ctx.scale(devicePixelRatio, devicePixelRatio); }
-  fitCanvas(sigSellerCanvas); fitCanvas(sigBuyerCanvas);
-  const sigSeller = new SignaturePad(sigSellerCanvas, { penColor: "rgb(20,20,20)" });
-  const sigBuyer = new SignaturePad(sigBuyerCanvas, { penColor: "rgb(20,20,20)" });
-  window.addEventListener('resize', ()=>{ fitCanvas(sigSellerCanvas); fitCanvas(sigBuyerCanvas); sigSeller.clear(); sigBuyer.clear(); });
+  /* ========= Signatures ========= */
+  const sellerCanvas = $('sig_seller'), buyerCanvas = $('sig_buyer');
+  function resizeCanvas(c){ const ratio = Math.max(window.devicePixelRatio || 1, 1); const w = c.clientWidth; const h = c.clientHeight; c.width = w * ratio; c.height = h * ratio; const ctx = c.getContext('2d'); ctx.scale(ratio, ratio); }
+  resizeCanvas(sellerCanvas); resizeCanvas(buyerCanvas);
+  window.addEventListener('resize', ()=>{ resizeCanvas(sellerCanvas); resizeCanvas(buyerCanvas); sellerSig.clear(); buyerSig.clear(); });
 
-  $('seller_clear').addEventListener('click', ()=> sigSeller.clear());
-  $('buyer_clear').addEventListener('click', ()=> sigBuyer.clear());
+  const sellerSig = new SignaturePad(sellerCanvas, { penColor: "rgb(20,20,20)" });
+  const buyerSig = new SignaturePad(buyerCanvas, { penColor: "rgb(20,20,20)" });
+  $('seller_clear').addEventListener('click', ()=> sellerSig.clear());
+  $('buyer_clear').addEventListener('click', ()=> buyerSig.clear());
 
-  // Item VAT controls
-  const itemVatReg = $('item_vat_reg'), itemVatNum = $('item_vat_num'), itemVatRate = $('item_vat_rate');
-  itemVatReg.addEventListener('change', ()=> {
-    const on = itemVatReg.checked;
-    itemVatNum.style.display = on ? 'block' : 'none';
-    itemVatRate.style.display = on ? 'inline-block' : 'none';
+  /* ========= ITEMS: dynamic lines, per-line images ========= */
+  const itemCountSelect = $('item_count'), itemRows = $('item_rows');
+  const itemImagesStore = {}; // map lineId -> array of {id,file,url}
+  function createItemRow(idx){
+    const id = 'item_' + idx;
+    const wrapper = document.createElement('div');
+    wrapper.style.border = '1px solid rgba(15,23,42,0.04)';
+    wrapper.style.padding = '10px';
+    wrapper.style.borderRadius = '8px';
+    wrapper.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:700">Item ${idx+1}</div>
+        <div class="muted">Line total: <span id="${id}_line_total">£0.00</span></div>
+      </div>
+      <div class="item-row" style="margin-top:8px">
+        <input id="${id}_name" placeholder="Item name">
+        <input id="${id}_qty" type="number" min="1" value="1" style="width:100%">
+        <input id="${id}_cost" type="number" step="0.01" min="0" value="0" style="width:100%">
+        <input id="${id}_condition" placeholder="Condition (e.g., New/Used)">
+        <div class="col-full" style="display:flex;gap:8px;margin-top:8px">
+          <textarea id="${id}_desc" placeholder="Description" style="flex:1"></textarea>
+          <div style="width:200px">
+            <div class="muted">Images</div>
+            <input id="${id}_img_input" type="file" accept="image/*" multiple style="width:100%">
+            <div class="thumb-grid" id="${id}_thumbs"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    return wrapper;
+  }
+
+  function renderItemRows(count){
+    itemRows.innerHTML = '';
+    for(let i=1;i<=count;i++){
+      const row = createItemRow(i);
+      itemRows.appendChild(row);
+      const lid = 'item_' + i;
+      itemImagesStore[lid] = itemImagesStore[lid] || [];
+      // wire events
+      $(`${lid}_qty`).addEventListener('input', ()=> updateItemLine(i));
+      $(`${lid}_cost`).addEventListener('input', ()=> updateItemLine(i));
+      $(`${lid}_name`).addEventListener('input', updatePreview);
+      $(`${lid}_condition`).addEventListener('input', updatePreview);
+      $(`${lid}_desc`).addEventListener('input', updatePreview);
+      const input = $(`${lid}_img_input`);
+      const thumbs = $(`${lid}_thumbs`);
+      input.addEventListener('change', (e)=> {
+        const files = Array.from(e.target.files || []);
+        files.forEach(f => {
+          if(!f.type.startsWith('image/')) return;
+          const iid = lid + '_' + Math.random().toString(36).slice(2,9);
+          const url = URL.createObjectURL(f);
+          itemImagesStore[lid].push({id:iid,file:f,url});
+          const t = document.createElement('div'); t.className='thumb'; t.dataset.id=iid;
+          t.innerHTML = `<img src="${url}" alt=""><button title="Delete">🗑️</button>`;
+          thumbs.appendChild(t);
+          t.querySelector('button').addEventListener('click', ()=>{
+            const arr = itemImagesStore[lid];
+            const idx = arr.findIndex(x=>x.id===iid);
+            if(idx>-1){ URL.revokeObjectURL(arr[idx].url); arr.splice(idx,1); }
+            t.remove();
+            updatePreview();
+          });
+        });
+        input.value='';
+        updatePreview();
+      });
+    }
+    updateAllItemLines();
+  }
+
+  function updateItemLine(i){
+    const lid = 'item_' + i;
+    const qty = parseFloat($(`${lid}_qty`).value||0);
+    const cost = parseFloat($(`${lid}_cost`).value||0);
+    const total = qty * cost;
+    $(`${lid}_line_total`).textContent = money(total);
+    $('item_delivery_disp').textContent = money(parseFloat($('item_delivery').value||0));
     updateItemCalc();
     updatePreview();
-  });
+  }
 
-  // Service VAT controls
-  const srvVatReg = $('service_vat_reg'), srvVatNum = $('service_vat_num'), srvVatRate = $('service_vat_rate');
-  srvVatReg.addEventListener('change', ()=> {
-    const on = srvVatReg.checked;
-    srvVatNum.style.display = on ? 'inline-block' : 'none';
-    srvVatRate.style.display = on ? 'inline-block' : 'none';
-    updateServiceCalc();
+  function updateAllItemLines(){
+    const count = parseInt(itemCountSelect.value);
+    for(let i=1;i<=count;i++) updateItemLine(i);
+  }
+
+  itemCountSelect.addEventListener('change', ()=> {
+    renderItemRows(parseInt(itemCountSelect.value));
     updatePreview();
   });
 
-  // Item inputs
-  ['item_cost','item_delivery','item_vat_rate'].forEach(id => $(id).addEventListener('input', ()=> { updateItemCalc(); updatePreview(); }));
-  ['item_name','item_condition','item_desc'].forEach(id => $(id).addEventListener('input', updatePreview));
+  // initial render
+  renderItemRows(parseInt(itemCountSelect.value));
+
+  // item VAT controls
+  $('item_vat_reg').addEventListener('change', ()=>{
+    const on = $('item_vat_reg').checked;
+    $('item_vat_num').style.display = on ? 'inline-block' : 'none';
+    $('item_vat_rate').style.display = on ? 'inline-block' : 'none';
+    updateItemCalc(); updatePreview();
+  });
+  $('item_vat_rate').addEventListener('change', ()=> { updateItemCalc(); updatePreview(); });
+  $('item_delivery').addEventListener('input', ()=> { updateItemCalc(); updatePreview(); });
 
   function updateItemCalc(){
-    const cost = parseFloat($('item_cost').value||0);
+    const count = parseInt(itemCountSelect.value);
+    let subtotal = 0;
+    for(let i=1;i<=count;i++){
+      const qty = parseFloat($(`item_${i}_qty`).value||0);
+      const cost = parseFloat($(`item_${i}_cost`).value||0);
+      subtotal += qty * cost;
+    }
     const delivery = parseFloat($('item_delivery').value||0);
-    const subtotal = cost + delivery;
-    const vat = (itemVatReg.checked ? subtotal * (parseFloat(itemVatRate.value||0)/100) : 0);
+    const vat = $('item_vat_reg').checked ? (subtotal + delivery) * (parseFloat($('item_vat_rate').value||0)/100) : 0;
     $('item_sub').textContent = money(subtotal);
     $('item_vat').textContent = money(vat);
-    $('item_total').textContent = money(subtotal + vat);
-    $('item_vat_amount').textContent = 'VAT to add: ' + money(vat);
+    $('item_delivery_disp').textContent = money(delivery);
+    $('item_total').textContent = money(subtotal + delivery + vat);
   }
 
-  // Service items dynamic
-  const serviceCount = $('service_count'), serviceItemsDiv = $('service_items');
-  function renderServiceItems(count){
-    serviceItemsDiv.innerHTML = '';
-    for(let i=0;i<count;i++){
-      const idx = i;
-      const block = document.createElement('div');
-      block.style.border = '1px solid rgba(15,23,42,0.04)';
-      block.style.padding = '10px';
-      block.style.borderRadius = '8px';
-      block.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="font-weight:700">Service item ${idx+1}</div>
-          <div class="muted">Cost: <span id="svc_${idx}_cost_disp">£0.00</span></div>
+  /* ========= SERVICES: dynamic lines ========= */
+  const serviceCountSelect = $('service_count'), serviceRows = $('service_rows');
+  const serviceImagesStore = {}; // map lineId -> array of {id,file,url}
+  function createServiceRow(idx){
+    const id = 'svc_' + idx;
+    const wrapper = document.createElement('div');
+    wrapper.style.border = '1px solid rgba(15,23,42,0.04)';
+    wrapper.style.padding = '10px';
+    wrapper.style.borderRadius = '8px';
+    wrapper.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:700">Service ${idx}</div>
+        <div class="muted">Cost: <span id="${id}_cost_disp">£0.00</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 100px;gap:8px;margin-top:8px">
+        <input id="${id}_name" placeholder="Service name">
+        <input id="${id}_cost" type="number" step="0.01" min="0" value="0">
+      </div>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <textarea id="${id}_desc" placeholder="Description" style="flex:1"></textarea>
+        <div style="width:200px">
+          <div class="muted">Images</div>
+          <input id="${id}_img_input" type="file" accept="image/*" multiple style="width:100%">
+          <div class="thumb-grid" id="${id}_thumbs"></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 140px;gap:8px;margin-top:8px">
-          <input id="svc_${idx}_name" placeholder="Service item name">
-          <input id="svc_${idx}_cost" type="number" step="0.01" value="0">
-        </div>
-        <div style="margin-top:8px"><textarea id="svc_${idx}_desc" placeholder="Service description"></textarea></div>
-      `;
-      serviceItemsDiv.appendChild(block);
+      </div>
+    `;
+    return wrapper;
+  }
 
-      // sync events
-      $(`svc_${idx}_cost`).addEventListener('input', ()=> { $(`svc_${idx}_cost_disp`).textContent = money($(`svc_${idx}_cost`).value||0); updateServiceCalc(); updatePreview(); });
-      $(`svc_${idx}_name`).addEventListener('input', updatePreview);
-      $(`svc_${idx}_desc`).addEventListener('input', updatePreview);
+  function renderServiceRows(count){
+    serviceRows.innerHTML = '';
+    for(let i=1;i<=count;i++){
+      const row = createServiceRow(i);
+      serviceRows.appendChild(row);
+      const lid = 'svc_' + i;
+      serviceImagesStore[lid] = serviceImagesStore[lid] || [];
+      $(`${lid}_cost`).addEventListener('input', ()=> { $(`${lid}_cost_disp`).textContent = money($(`${lid}_cost`).value||0); updateServiceCalc(); updatePreview(); });
+      $(`${lid}_name`).addEventListener('input', updatePreview);
+      $(`${lid}_desc`).addEventListener('input', updatePreview);
+      const input = $(`${lid}_img_input`);
+      const thumbs = $(`${lid}_thumbs`);
+      input.addEventListener('change', (e)=> {
+        const files = Array.from(e.target.files || []);
+        files.forEach(f => {
+          if(!f.type.startsWith('image/')) return;
+          const iid = lid + '_' + Math.random().toString(36).slice(2,9);
+          const url = URL.createObjectURL(f);
+          serviceImagesStore[lid].push({id:iid,file:f,url});
+          const t = document.createElement('div'); t.className='thumb'; t.dataset.id=iid;
+          t.innerHTML = `<img src="${url}" alt=""><button title="Delete">🗑️</button>`;
+          thumbs.appendChild(t);
+          t.querySelector('button').addEventListener('click', ()=>{
+            const arr = serviceImagesStore[lid];
+            const idx = arr.findIndex(x=>x.id===iid);
+            if(idx>-1){ URL.revokeObjectURL(arr[idx].url); arr.splice(idx,1); }
+            t.remove();
+            updatePreview();
+          });
+        });
+        input.value='';
+        updatePreview();
+      });
     }
+    updateServiceCalc();
   }
-  renderServiceItems(1);
-  serviceCount.addEventListener('change', ()=> { renderServiceItems(parseInt(serviceCount.value)); updateServiceCalc(); updatePreview(); });
+
+  serviceCountSelect.addEventListener('change', ()=> { renderServiceRows(parseInt(serviceCountSelect.value)); updatePreview(); });
+  renderServiceRows(parseInt(serviceCountSelect.value));
+
+  $('service_vat_reg').addEventListener('change', ()=>{
+    const on = $('service_vat_reg').checked;
+    $('service_vat_num').style.display = on ? 'inline-block' : 'none';
+    $('service_vat_rate').style.display = on ? 'inline-block' : 'none';
+    updateServiceCalc(); updatePreview();
+  });
+  $('service_vat_rate').addEventListener('change', ()=> { updateServiceCalc(); updatePreview(); });
 
   function updateServiceCalc(){
+    const count = parseInt(serviceCountSelect.value);
     let subtotal = 0;
-    const count = parseInt(serviceCount.value);
-    for(let i=0;i<count;i++){
-      const cost = parseFloat($(`svc_${i}_cost`).value||0);
-      subtotal += cost;
+    for(let i=1;i<=count;i++){
+      subtotal += parseFloat($(`svc_${i}_cost`).value||0);
     }
-    const vat = srvVatReg.checked ? subtotal * (parseFloat(srvVatRate.value||0)/100) : 0;
+    const vat = $('service_vat_reg').checked ? subtotal * (parseFloat($('service_vat_rate').value||0)/100) : 0;
     $('service_sub').textContent = money(subtotal);
     $('service_vat').textContent = money(vat);
     $('service_total').textContent = money(subtotal + vat);
   }
 
-  // Images: add, preview, delete
-  function setupImageControls(inputId, addButtonId, thumbContainerId, storeArray){
-    const input = $(inputId), addBtn = $(addButtonId), container = $(thumbContainerId);
-    // storeArray is an array reference to hold {id, file, url}
-    addBtn.addEventListener('click', ()=> {
-      // if user selected files, add them; otherwise trigger file picker
-      if(input.files && input.files.length>0){
-        addFiles(input.files);
-        input.value = '';
-      } else {
-        input.click();
-      }
-    });
-    input.addEventListener('change', ()=> {
-      if(input.files && input.files.length>0){ addFiles(input.files); input.value=''; }
-    });
-
-    function addFiles(files){
-      Array.from(files).forEach(f=>{
-        if(!f.type.startsWith('image/')) return;
-        const id = 'img_' + Math.random().toString(36).slice(2,9);
-        const url = URL.createObjectURL(f);
-        storeArray.push({id, file:f, url});
-        const thumb = document.createElement('div'); thumb.className='thumb'; thumb.dataset.id=id;
-        thumb.innerHTML = `<img src="${url}" alt=""><button title="Delete">🗑️</button>`;
-        container.appendChild(thumb);
-        thumb.querySelector('button').addEventListener('click', ()=> {
-          // remove
-          const idx = storeArray.findIndex(x=>x.id===id);
-          if(idx>=0) storeArray.splice(idx,1);
-          URL.revokeObjectURL(url);
-          thumb.remove();
-          updatePreview();
-        });
-      });
-      updatePreview();
-    }
-  }
-
-  const itemImages = [], serviceImages = [];
-  setupImageControls('item_image_input','item_image_add','item_thumbs', itemImages);
-  setupImageControls('service_image_input','service_image_add','service_thumbs', serviceImages);
-
-  // Preview builder
+  /* ========= Preview builder (A4-friendly) ========= */
   function updatePreview(){
-    // meta
-    $('generatedAt').textContent = '';
+    // header
     $('previewDate').textContent = nowStr();
     $('previewOnline').textContent = $('online_site').value || '';
 
     // seller
-    const seller_name = `${$('seller_first').value||''} ${$('seller_last').value||''}`.trim();
-    $('p_seller_name').textContent = seller_name;
+    const sellerName = `${$('seller_first').value||''} ${$('seller_last').value||''}`.trim();
+    $('p_seller_name').textContent = sellerName || '';
     $('p_seller_company').textContent = $('seller_company').value || '';
-    $('p_seller_addr').textContent = [ $('seller_prop').value, $('seller_addr1').value, $('seller_addr2').value, $('seller_addr3').value, $('seller_town').value, $('seller_county').value, $('seller_post').value, $('seller_country').value].filter(Boolean).join(', ');
-    $('p_seller_contact').textContent = ['Tel: '+($('seller_tel').value||''), $('seller_email').value || ''].filter(Boolean).join(' • ');
+    $('p_seller_addr').textContent = [ $('seller_prop').value, $('seller_addr1').value, $('seller_addr2')?.value, $('seller_town').value, $('seller_county').value, $('seller_post').value, $('seller_country').value].filter(Boolean).join(', ');
+    $('p_seller_contact').textContent = ['Tel: '+($('seller_tel').value||''), $('seller_email').value||''].filter(Boolean).join(' • ');
 
     // buyer
-    const buyer_name = `${$('buyer_first').value||''} ${$('buyer_last').value||''}`.trim();
-    $('p_buyer_name').textContent = buyer_name;
+    const buyerName = `${$('buyer_first').value||''} ${$('buyer_last').value||''}`.trim();
+    $('p_buyer_name').textContent = buyerName || '';
     $('p_buyer_company').textContent = $('buyer_company').value || '';
-    $('p_buyer_addr').textContent = [ $('buyer_prop').value, $('buyer_addr1').value, $('buyer_addr2').value, $('buyer_addr3').value, $('buyer_town').value, $('buyer_county').value, $('buyer_post').value, $('buyer_country').value].filter(Boolean).join(', ');
-    $('p_buyer_contact').textContent = ['Tel: '+($('buyer_tel').value||''), $('buyer_email').value || ''].filter(Boolean).join(' • ');
+    $('p_buyer_addr').textContent = [ $('buyer_prop').value, $('buyer_addr1').value, $('buyer_addr2')?.value, $('buyer_town').value, $('buyer_county').value, $('buyer_post').value, $('buyer_country').value].filter(Boolean).join(', ');
+    $('p_buyer_contact').textContent = ['Tel: '+($('buyer_tel').value||''), $('buyer_email').value||''].filter(Boolean).join(' • ');
 
-    // content area
-    const previewContent = $('previewContent');
-    previewContent.innerHTML = '';
+    // Items table
+    const itemsContainer = $('items_table_container');
+    itemsContainer.innerHTML = '';
+    const servicesContainer = $('services_table_container');
+    servicesContainer.innerHTML = '';
+    $('previewImages').innerHTML = '';
+
     if(btnItem.classList.contains('active')){
-      updateItemCalc();
-      const name = $('item_name').value || '—';
-      const desc = $('item_desc').value || '';
-      const cond = $('item_condition').value || '';
-      const cost = parseFloat($('item_cost').value||0);
-      const delivery = parseFloat($('item_delivery').value||0);
-      const subtotal = cost + delivery;
-      const vat = (itemVatReg.checked ? subtotal * (parseFloat(itemVatRate.value||0)/100) : 0);
+      // build items table
+      const tbl = document.createElement('table');
+      tbl.innerHTML = `<thead><tr><th style="width:6%">#</th><th style="width:30%">Item</th><th style="width:26%">Description</th><th style="width:10%">Qty</th><th style="width:12%">Unit (£)</th><th style="width:16%">Line total (£)</th></tr></thead>`;
+      const tbody = document.createElement('tbody');
+      const count = parseInt(itemCountSelect.value);
+      let subtotal = 0;
+      for(let i=1;i<=count;i++){
+        const name = $(`item_${i}_name`).value || '';
+        const desc = $(`item_${i}_desc`).value || '';
+        const cond = $(`item_${i}_condition`).value || '';
+        const qty = parseFloat($(`item_${i}_qty`).value||0);
+        const cost = parseFloat($(`item_${i}_cost`).value||0);
+        const lineTotal = qty * cost;
+        subtotal += lineTotal;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${i}</td><td><strong>${escapeHtml(name)}</strong><div class="small">${escapeHtml(cond)}</div></td><td>${escapeHtml(desc)}</td><td class="right">${qty}</td><td class="right">${money(cost)}</td><td class="right">${money(lineTotal)}</td>`;
+        tbody.appendChild(tr);
 
-      previewContent.innerHTML = `
-        <div style="font-weight:700">Item</div>
-        <div style="margin-top:6px"><strong>${escapeHtml(name)}</strong> ${cond ? '• ' + escapeHtml(cond): ''}</div>
-        <div class="small">${escapeHtml(desc)}</div>
-        <div style="margin-top:8px">
-          <div style="display:flex;justify-content:space-between"><div class="small">Cost</div><div>${money(cost)}</div></div>
-          <div style="display:flex;justify-content:space-between"><div class="small">Delivery</div><div>${money(delivery)}</div></div>
-          <div style="display:flex;justify-content:space-between"><div class="small">VAT</div><div>${money(vat)}</div></div>
-          <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:6px"><div>Total</div><div>${money(subtotal + vat)}</div></div>
+        // show images per line beneath table rows area (collect)
+        const imgs = itemImagesStore['item_' + i] || [];
+        if(imgs.length){
+          const cont = document.createElement('div');
+          cont.style.marginTop='6px'; cont.style.display='flex'; cont.style.gap='8px'; cont.style.flexWrap='wrap';
+          imgs.forEach(im => {
+            const el = document.createElement('img'); el.src = im.url; el.style.width='90px'; el.style.height='70px'; el.style.objectFit='cover'; el.style.borderRadius='6px'; el.style.border='1px solid rgba(15,23,42,0.04)';
+            cont.appendChild(el);
+          });
+          // attach to images preview area grouped by line
+          const grp = document.createElement('div'); grp.style.marginTop='6px';
+          grp.innerHTML = `<div class="small" style="font-weight:700">Images — Item ${i}</div>`;
+          grp.appendChild(cont);
+          $('previewImages').appendChild(grp);
+        }
+      }
+      tbl.appendChild(tbody);
+      itemsContainer.appendChild(tbl);
+
+      // totals
+      const delivery = parseFloat($('item_delivery').value||0);
+      const vat = $('item_vat_reg').checked ? (subtotal + delivery) * (parseFloat($('item_vat_rate').value||0)/100) : 0;
+      const total = subtotal + delivery + vat;
+      // show totals beneath
+      const totalsHtml = document.createElement('div');
+      totalsHtml.style.marginTop='10px';
+      totalsHtml.innerHTML = `
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <div style="min-width:300px">
+            <div style="display:flex;justify-content:space-between"><div class="small">Subtotal</div><div>${money(subtotal)}</div></div>
+            <div style="display:flex;justify-content:space-between"><div class="small">Delivery</div><div>${money(delivery)}</div></div>
+            <div style="display:flex;justify-content:space-between"><div class="small">VAT</div><div>${money(vat)}</div></div>
+            <div style="display:flex;justify-content:space-between;font-weight:800;margin-top:6px"><div>Total</div><div>${money(total)}</div></div>
+          </div>
         </div>
       `;
+      itemsContainer.appendChild(totalsHtml);
+
+      // set summary boxes on form side
+      $('item_sub').textContent = money(subtotal);
+      $('item_vat').textContent = money(vat);
+      $('item_delivery_disp').textContent = money(delivery);
+      $('item_total').textContent = money(total);
     } else {
-      // service
-      updateServiceCalc();
-      const count = parseInt(serviceCount.value);
-      let html = `<div style="font-weight:700">Service</div>`;
-      for(let i=0;i<count;i++){
-        const name = $(`svc_${i}_name`).value || `Service ${i+1}`;
+      // Service mode
+      const tbl = document.createElement('table');
+      tbl.innerHTML = `<thead><tr><th style="width:6%">#</th><th style="width:40%">Service</th><th style="width:34%">Description</th><th style="width:20%">Cost (£)</th></tr></thead>`;
+      const tbody = document.createElement('tbody');
+      const count = parseInt(serviceCountSelect.value);
+      let subtotal = 0;
+      for(let i=1;i<=count;i++){
+        const name = $(`svc_${i}_name`).value || '';
         const desc = $(`svc_${i}_desc`).value || '';
         const cost = parseFloat($(`svc_${i}_cost`).value||0);
-        html += `<div style="margin-top:8px"><strong>${escapeHtml(name)}</strong> — <span class="small">${escapeHtml(desc)}</span>
-                 <div style="display:flex;justify-content:space-between"><div class="small">Cost</div><div>${money(cost)}</div></div></div>`;
+        subtotal += cost;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${i}</td><td><strong>${escapeHtml(name)}</strong></td><td>${escapeHtml(desc)}</td><td class="right">${money(cost)}</td>`;
+        tbody.appendChild(tr);
+
+        const imgs = serviceImagesStore['svc_' + i] || [];
+        if(imgs.length){
+          const cont = document.createElement('div');
+          cont.style.marginTop='6px'; cont.style.display='flex'; cont.style.gap='8px'; cont.style.flexWrap='wrap';
+          imgs.forEach(im => {
+            const el = document.createElement('img'); el.src = im.url; el.style.width='90px'; el.style.height='70px'; el.style.objectFit='cover'; el.style.borderRadius='6px'; el.style.border='1px solid rgba(15,23,42,0.04)';
+            cont.appendChild(el);
+          });
+          const grp = document.createElement('div'); grp.style.marginTop='6px';
+          grp.innerHTML = `<div class="small" style="font-weight:700">Images — Service ${i}</div>`;
+          grp.appendChild(cont);
+          $('previewImages').appendChild(grp);
+        }
       }
-      const subtotal = parseFloat($('service_sub').textContent.replace('£','')) || 0;
-      const vat = parseFloat($('service_vat').textContent.replace('£','')) || 0;
-      html += `<div style="margin-top:10px">
-                <div style="display:flex;justify-content:space-between"><div class="small">Sub total</div><div>${money(subtotal)}</div></div>
-                <div style="display:flex;justify-content:space-between"><div class="small">VAT</div><div>${money(vat)}</div></div>
-                <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:6px"><div>Total</div><div>${money(subtotal + vat)}</div></div>
-               </div>`;
-      previewContent.innerHTML = html;
+      tbl.appendChild(tbody);
+      servicesContainer.appendChild(tbl);
+
+      const vat = $('service_vat_reg').checked ? subtotal * (parseFloat($('service_vat_rate').value||0)/100) : 0;
+      const total = subtotal + vat;
+      const totalsHtml = document.createElement('div');
+      totalsHtml.style.marginTop='10px';
+      totalsHtml.innerHTML = `
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <div style="min-width:300px">
+            <div style="display:flex;justify-content:space-between"><div class="small">Subtotal</div><div>${money(subtotal)}</div></div>
+            <div style="display:flex;justify-content:space-between"><div class="small">VAT</div><div>${money(vat)}</div></div>
+            <div style="display:flex;justify-content:space-between;font-weight:800;margin-top:6px"><div>Total</div><div>${money(total)}</div></div>
+          </div>
+        </div>
+      `;
+      servicesContainer.appendChild(totalsHtml);
+
+      $('service_sub').textContent = money(subtotal);
+      $('service_vat').textContent = money(vat);
+      $('service_total').textContent = money(total);
     }
 
-    // images (combined from itemImages or serviceImages depending on mode)
-    const previewImages = $('previewImages');
-    previewImages.innerHTML = '';
-    const imgs = (btnItem.classList.contains('active') ? itemImages : serviceImages);
-    if(imgs.length){
-      const cont = document.createElement('div');
-      cont.style.display='flex'; cont.style.gap='8px'; cont.style.flexWrap='wrap'; cont.style.marginTop='8px';
-      imgs.forEach(obj=>{
-        const el = document.createElement('img'); el.src = obj.url; el.style.width='120px'; el.style.height='90px'; el.style.objectFit='cover'; el.style.borderRadius='6px'; el.style.border='1px solid rgba(15,23,42,0.04)';
-        cont.appendChild(el);
-      });
-      previewImages.appendChild(cont);
-    }
+    // signatures preview
+    const pSigSeller = $('p_sig_seller'), pSigBuyer = $('p_sig_buyer');
+    pSigSeller.innerHTML = ''; pSigBuyer.innerHTML = '';
+    if(!sellerSig.isEmpty()){
+      const img = document.createElement('img'); img.src = sellerSig.toDataURL('image/png'); img.style.maxHeight='80px'; img.style.maxWidth='100%'; pSigSeller.appendChild(img);
+    } else pSigSeller.innerHTML = '<div class="small">Not signed</div>';
+    if(!buyerSig.isEmpty()){
+      const img = document.createElement('img'); img.src = buyerSig.toDataURL('image/png'); img.style.maxHeight='80px'; img.style.maxWidth='100%'; pSigBuyer.appendChild(img);
+    } else pSigBuyer.innerHTML = '<div class="small">Not signed</div>';
 
-    // signatures preview (use dataURL if present)
-    const p_sig_seller = $('p_sig_seller'), p_sig_buyer = $('p_sig_buyer');
-    p_sig_seller.innerHTML = ''; p_sig_buyer.innerHTML = '';
-    if(!sigSeller.isEmpty()){
-      const img = document.createElement('img'); img.src = sigSeller.toDataURL('image/png'); img.style.maxHeight='80px'; img.style.maxWidth='100%'; p_sig_seller.appendChild(img);
-    } else { p_sig_seller.innerHTML = '<div class="small">Not signed</div>'; }
-    if(!sigBuyer.isEmpty()){
-      const img = document.createElement('img'); img.src = sigBuyer.toDataURL('image/png'); img.style.maxHeight='80px'; img.style.maxWidth='100%'; p_sig_buyer.appendChild(img);
-    } else { p_sig_buyer.innerHTML = '<div class="small">Not signed</div>'; }
-
-    $('generatedAt').textContent = ''; // we'll show on export
+    // update 'generatedAt' small text for the preview area
+    $('generatedAt').textContent = '';
   }
 
-  // Escape HTML helper
-  function escapeHtml(str){ return String(str||'').replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+  // small helper to escape HTML
+  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-  // Initial preview
+  // initial preview render
   updatePreview();
 
-  // Preview refresh button
-  $('previewButton').addEventListener('click', updatePreview);
+  // wire up interactions to trigger preview update
+  document.querySelectorAll('input, textarea, select').forEach(el => {
+    el.addEventListener('input', ()=> { clearTimeout(el._t); el._t = setTimeout(updatePreview, 120); });
+  });
 
-  // Export to PDF
-  $('exportPDF').addEventListener('click', async function(){
+  /* ========= PDF generation (A4 multi-page safe) ========= */
+  $('exportPDF').addEventListener('click', async ()=>{
     updatePreview();
-
-    // Insert current timestamp into preview header
     $('generatedAt').textContent = 'Generated: ' + nowStr();
-
     const receiptEl = $('receipt');
 
-    // we want high quality: scale
-    const scale = 2;
-    const originalWidth = receiptEl.offsetWidth;
-    const originalHeight = receiptEl.offsetHeight;
-
-    // temporarily set background white to avoid transparency issues
-    receiptEl.style.background = 'white';
-
+    // Use html2canvas to render the receipt element; use a high scale for clarity
     try {
+      const scale = 2;
       const canvas = await html2canvas(receiptEl, {
         scale: scale,
         useCORS: true,
@@ -598,56 +735,71 @@
         windowHeight: document.documentElement.clientHeight
       });
 
-      // create PDF with proper page break scaling (A4 portrait)
+      const imgData = canvas.toDataURL('image/png');
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
 
-      const imgData = canvas.toDataURL('image/png');
+      // image dimensions in mm
       const imgProps = pdf.getImageProperties(imgData);
-      const imgWidth = pageWidth - 20; // 10mm margin each side
+      const imgWidth = pageWidth - 20; // 10mm margin
       const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
 
-      let position = 10;
-      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-      // if the content is taller than one A4, add pages (split by height)
-      if(imgHeight > pageHeight - 20){
-        // number of pages
-        const totalPages = Math.ceil(imgHeight / (pageHeight - 20));
-        for(let i=1;i<totalPages;i++){
-          pdf.addPage();
-          const y = -(pageHeight - 20) * i + 10;
-          pdf.addImage(imgData, 'PNG', 10, y, imgWidth, imgHeight);
+      // if height fits on one page
+      if(imgHeight <= pageHeight - 20){
+        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+      } else {
+        // split the large image into multiple pages
+        // approach: draw the full image, but offset y for each page
+        // create an offscreen canvas to cut slices
+        const pxPerMm = imgProps.width / imgWidth; // pixels per mm
+        const sliceHeightPx = Math.floor((pageHeight - 20) * pxPerMm);
+        let y = 0;
+        let page = 0;
+        while(y < imgProps.height){
+          const sliceCanvas = document.createElement('canvas');
+          sliceCanvas.width = imgProps.width;
+          sliceCanvas.height = Math.min(sliceHeightPx, imgProps.height - y);
+          const sc = sliceCanvas.getContext('2d');
+          // draw the slice from the big canvas
+          const bigImg = new Image();
+          bigImg.src = imgData;
+          // we need a sync draw — wait for image to load
+          await new Promise((res) => {
+            bigImg.onload = () => {
+              sc.drawImage(bigImg, 0, y, imgProps.width, sliceCanvas.height, 0, 0, sliceCanvas.width, sliceCanvas.height);
+              res();
+            };
+          });
+          const sliceData = sliceCanvas.toDataURL('image/png');
+          if(page > 0) pdf.addPage();
+          const hMm = (sliceCanvas.height / pxPerMm);
+          pdf.addImage(sliceData, 'PNG', 10, 10, imgWidth, hMm);
+          y += sliceHeightPx;
+          page++;
         }
       }
 
       const filename = `receipt_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.pdf`;
       pdf.save(filename);
     } catch (err){
-      alert('Error generating PDF: ' + err.message);
       console.error(err);
-    } finally {
-      receiptEl.style.background = ''; // reset
+      alert('Error generating PDF: ' + err.message);
     }
   });
 
-  // Keep preview up-to-date on many inputs
-  const inputsToWatch = Array.from(document.querySelectorAll('input, textarea, select'));
-  inputsToWatch.forEach(el => el.addEventListener('input', ()=> {
-    // debounce slightly to avoid too many updates
-    clearTimeout(el._t); el._t = setTimeout(updatePreview, 120);
-  }));
+  // provide preview refresh button
+  $('previewButton').addEventListener('click', updatePreview);
 
-  // ensure service calc updates when vat rate changes
-  $('service_vat_rate').addEventListener('input', updateServiceCalc);
-  // also update item calc if VAT rate changes
-  $('item_vat_rate').addEventListener('input', updateItemCalc);
+  // Ensure computed totals update on changes to VAT rates and delivery
+  $('item_vat_rate').addEventListener('input', ()=> { updateItemCalc(); updatePreview(); });
+  $('item_delivery').addEventListener('input', ()=> { updateItemCalc(); updatePreview(); });
+  $('service_vat_rate').addEventListener('input', ()=> { updateServiceCalc(); updatePreview(); });
 
-  // Initial small calc fills
-  updateItemCalc();
-  updateServiceCalc();
-
+  // small initialization for item & service calcs
+  updateItemCalc(); updateServiceCalc();
 </script>
 </body>
 </html>
