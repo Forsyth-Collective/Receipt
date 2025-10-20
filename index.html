@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Receipt Generator</title>
+
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+
+  <style>
+    :root{--accent:#2b7cff;--muted:#666}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;line-height:1.4;margin:0;padding:20px;background:#f6f8fb;color:#111}
+    .container{max-width:1100px;margin:0 auto;background:#fff;padding:18px;border-radius:8px;box-shadow:0 8px 30px rgba(20,30,50,0.07)}
+    h1{margin:0 0 12px;font-size:20px}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    label{display:block;font-size:13px;margin-bottom:6px;color:var(--muted)}
+    input[type="text"], input[type="email"], input[type="tel"], input[type="number"], select, textarea{
+      width:100%;padding:8px;border-radius:6px;border:1px solid #e0e6ef;background:#fff;box-sizing:border-box
+    }
+    .section{margin:12px 0;padding:12px;border-radius:8px;border:1px solid #eef2fb;background:#fbfdff}
+    .small{font-size:13px;color:var(--muted)}
+    .row{display:flex;gap:8px}
+    .row > *{flex:1}
+    .muted{color:var(--muted)}
+    .inline{display:flex;gap:8px;align-items:center}
+    .controls{display:flex;gap:8px;margin-top:12px}
+    button{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:0;cursor:pointer}
+    button.secondary{background:#fff;color:var(--accent);border:1px solid #e0e6ef}
+    .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .thumb{width:90px;height:90px;border-radius:6px;border:1px solid #e6eefc;object-fit:cover}
+    .service-row{display:grid;grid-template-columns:1fr 1fr 120px 120px 120px;gap:8px;align-items:center;margin-bottom:8px}
+    .service-row input{width:100%}
+    .totals{display:flex;flex-direction:column;gap:6px;margin-top:8px;align-items:flex-end}
+    .totals .line{display:flex;gap:18px}
+    .sigpad{border:1px solid #e6eefc;border-radius:6px;width:100%;height:160px;background:#fff}
+    .pdf-preview{display:none} /* not needed */
+    @media (max-width:900px){ .grid{grid-template-columns:1fr} .service-row{grid-template-columns:1fr} .service-row > *{width:100%} }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Receipt Generator</h1>
+    <p class="small">Fill in seller/buyer details, choose Item or Service, capture signatures, then generate a PDF receipt.</p>
+
+    <div class="section">
+      <h3>Seller's Information</h3>
+      <div class="grid">
+        <div>
+          <label>First name<input id="seller_first" type="text"></label>
+          <label>Property Number or Name<input id="seller_prop" type="text"></label>
+          <label>Address line 1<input id="seller_addr1" type="text"></label>
+          <label>Town<input id="seller_town" type="text"></label>
+          <label>County<input id="seller_county" type="text"></label>
+          <label>Post Code<input id="seller_post" type="text"></label>
+          <label>Country<input id="seller_country" type="text"></label>
+        </div>
+        <div>
+          <label>Last name<input id="seller_last" type="text"></label>
+          <label>Company (if applicable)<input id="seller_company" type="text"></label>
+          <label>Address line 2<input id="seller_addr2" type="text"></label>
+          <label>Address line 3<input id="seller_addr3" type="text"></label>
+          <label>Telephone Number<input id="seller_tel" type="tel"></label>
+          <label>Email Address<input id="seller_email" type="email"></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Buyer's Information</h3>
+      <div class="grid">
+        <div>
+          <label>First name<input id="buyer_first" type="text"></label>
+          <label>Property Number or Name<input id="buyer_prop" type="text"></label>
+          <label>Address line 1<input id="buyer_addr1" type="text"></label>
+          <label>Town<input id="buyer_town" type="text"></label>
+          <label>County<input id="buyer_county" type="text"></label>
+          <label>Post Code<input id="buyer_post" type="text"></label>
+          <label>Country<input id="buyer_country" type="text"></label>
+        </div>
+        <div>
+          <label>Last name<input id="buyer_last" type="text"></label>
+          <label>Company (if applicable)<input id="buyer_company" type="text"></label>
+          <label>Address line 2<input id="buyer_addr2" type="text"></label>
+          <label>Address line 3<input id="buyer_addr3" type="text"></label>
+          <label>Telephone Number<input id="buyer_tel" type="tel"></label>
+          <label>Email Address<input id="buyer_email" type="email"></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Purchase Details</h3>
+      <div class="row">
+        <div>
+          <label>Service or Item purchased (short text)<input id="purchase_desc" type="text"></label>
+          <label>Online Purchased Site (e.g. Facebook, eBay)<input id="purchase_site" type="text"></label>
+        </div>
+        <div style="min-width:220px;">
+          <label class="inline"><input id="mode_item" type="radio" name="mode" checked> Item</label>
+          <label class="inline"><input id="mode_service" type="radio" name="mode"> Service</label>
+          <div class="small muted">Choose Item or Service to reveal the right fields</div>
+        </div>
+      </div>
+
+      <!-- ITEM BLOCK -->
+      <div id="block_item" style="margin-top:12px">
+        <div class="grid">
+          <div>
+            <label>Item Name<input id="item_name" type="text"></label>
+            <label>Item Description<textarea id="item_desc" rows="3"></textarea></label>
+            <label>Item Condition<input id="item_condition" type="text" placeholder="e.g. Used - Good"></label>
+          </div>
+          <div>
+            <label>Item Cost (£)<input id="item_cost" type="number" min="0" step="0.01" value="0"></label>
+            <label>Delivery Charge (£)<input id="item_delivery" type="number" min="0" step="0.01" value="0"></label>
+            <label><input id="tax_exempt" type="checkbox"> Tax Exempt (if checked, no tax field)</label>
+            <div id="tax_row">
+              <label>Tax cost (£)<input id="item_tax" type="number" min="0" step="0.01" value="0"></label>
+            </div>
+            <label>Total Cost (£)<input id="item_total" readonly type="text"></label>
+          </div>
+        </div>
+
+        <div style="margin-top:8px">
+          <label>Upload pictures of the item<input id="item_images" type="file" accept="image/*" multiple></label>
+          <div id="item_thumbs" class="thumbs"></div>
+        </div>
+      </div>
+
+      <!-- SERVICE BLOCK -->
+      <div id="block_service" style="display:none;margin-top:12px">
+        <div class="row">
+          <div>
+            <label>Is the company VAT registered?
+              <select id="service_vat_registered">
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+            </label>
+          </div>
+          <div style="min-width:240px">
+            <label>How many service items?
+              <select id="service_count">
+                <!-- options 1..10 -->
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div id="service_items_container" style="margin-top:8px;"></div>
+
+        <div class="totals">
+          <div class="line"><div class="muted">Services Subtotal: </div><div id="services_subtotal">£0.00</div></div>
+          <div class="line"><div class="muted">Total VAT: </div><div id="services_vat_total">£0.00</div></div>
+          <div class="line"><strong>Total:</strong><strong id="services_total">£0.00</strong></div>
+        </div>
+
+        <div style="margin-top:8px">
+          <label>Upload pictures of the service carried out<input id="service_images" type="file" accept="image/*" multiple></label>
+          <div id="service_thumbs" class="thumbs"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Signatures</h3>
+      <div class="grid">
+        <div>
+          <div class="small">Seller's Signature</div>
+          <canvas id="sig_seller" class="sigpad"></canvas>
+          <div class="controls">
+            <button id="clear_seller" class="secondary">Clear</button>
+          </div>
+        </div>
+        <div>
+          <div class="small">Buyer's Signature</div>
+          <canvas id="sig_buyer" class="sigpad"></canvas>
+          <div class="controls">
+            <button id="clear_buyer" class="secondary">Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:12px">
+      <button id="generate">Generate Receipt (PDF)</button>
+      <button id="reset" class="secondary">Reset Form</button>
+    </div>
+
+    <!-- invisible area to render receipt for accurate PDF capture -->
+    <div id="pdf_area" class="pdf-preview" style="padding:18px;background:#fff;max-width:800px;margin-top:20px;">
+      <!-- generated on demand -->
+    </div>
+  </div>
+
+<script>
+(function(){
+  // Helper: currency math in pence to avoid float errors
+  function toPence(value){
+    // accept number or string
+    const n = Number(value) || 0;
+    return Math.round(n * 100);
+  }
+  function penceToStr(p){
+    return '£' + (p/100).toFixed(2);
+  }
+  function penceToNumber(p){ return p/100; }
+
+  // Elements
+  const modeItem = document.getElementById('mode_item');
+  const modeService = document.getElementById('mode_service');
+  const blockItem = document.getElementById('block_item');
+  const blockService = document.getElementById('block_service');
+
+  // Item elements
+  const itemCost = document.getElementById('item_cost');
+  const itemDelivery = document.getElementById('item_delivery');
+  const taxExempt = document.getElementById('tax_exempt');
+  const itemTax = document.getElementById('item_tax');
+  const itemTotal = document.getElementById('item_total');
+  const itemImages = document.getElementById('item_images');
+  const itemThumbs = document.getElementById('item_thumbs');
+
+  // Service elements
+  const serviceCount = document.getElementById('service_count');
+  const serviceItemsContainer = document.getElementById('service_items_container');
+  const serviceVatRegistered = document.getElementById('service_vat_registered');
+  const servicesSubtotalEl = document.getElementById('services_subtotal');
+  const servicesVatTotalEl = document.getElementById('services_vat_total');
+  const servicesTotalEl = document.getElementById('services_total');
+  const serviceImages = document.getElementById('service_images');
+  const serviceThumbs = document.getElementById('service_thumbs');
+
+  // Signatures
+  const sigSellerCanvas = document.getElementById('sig_seller');
+  const sigBuyerCanvas = document.getElementById('sig_buyer');
+  const clearSeller = document.getElementById('clear_seller');
+  const clearBuyer = document.getElementById('clear_buyer');
+
+  // Buttons
+  const generateBtn = document.getElementById('generate');
+  const resetBtn = document.getElementById('reset');
+
+  // initialize service count options 1..10
+  for(let i=1;i<=10;i++){
+    const opt = document.createElement('option');
+    opt.value = i; opt.textContent = i;
+    serviceCount.appendChild(opt);
+  }
+
+  // Toggle modes
+  function updateMode(){
+    if(modeItem.checked){
+      blockItem.style.display = '';
+      blockService.style.display = 'none';
+    } else {
+      blockItem.style.display = 'none';
+      blockService.style.display = '';
+    }
+  }
+  modeItem.addEventListener('change', updateMode);
+  modeService.addEventListener('change', updateMode);
+
+  // Item calculations
+  function recalcItemTotal(){
+    const pCost = toPence(itemCost.value);
+    const pDelivery = toPence(itemDelivery.value);
+    const pTax = taxExempt.checked ? 0 : toPence(itemTax.value);
+    const total = pCost + pDelivery + pTax;
+    itemTotal.value = penceToNumber(total).toFixed(2);
+  }
+  itemCost.addEventListener('input', recalcItemTotal);
+  itemDelivery.addEventListener('input', recalcItemTotal);
+  itemTax.addEventListener('input', recalcItemTotal);
+  taxExempt.addEventListener('change', () => {
+    document.getElementById('tax_row').style.display = taxExempt.checked ? 'none' : '';
+    recalcItemTotal();
+  });
+  // initialize tax row
+  document.getElementById('tax_row').style.display = taxExempt.checked ? 'none' : '';
+
+  // Image previews
+  function previewFiles(inputEl, targetEl){
+    const files = Array.from(inputEl.files || []);
+    targetEl.innerHTML = '';
+    files.forEach(file => {
+      const img = document.createElement('img');
+      img.className = 'thumb';
+      img.alt = file.name;
+      const reader = new FileReader();
+      reader.onload = e => img.src = e.target.result;
+      reader.readAsDataURL(file);
+      targetEl.appendChild(img);
+    });
+  }
+  itemImages.addEventListener('change', ()=> previewFiles(itemImages,itemThumbs));
+  serviceImages.addEventListener('change', ()=> previewFiles(serviceImages,serviceThumbs));
+
+  // Signature pads
+  function fitCanvas(canvas){
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    const w = canvas.offsetWidth;
+    const h = canvas.offsetHeight;
+    canvas.width = Math.floor(w * ratio);
+    canvas.height = Math.floor(h * ratio);
+    canvas.getContext('2d').scale(ratio, ratio);
+  }
+  function createSignaturePad(canvas){
+    fitCanvas(canvas);
+    const pad = new SignaturePad(canvas, {backgroundColor: '#fff'});
+    window.addEventListener('resize', ()=> {
+      // preserve drawing by converting to image, resizing, redrawing
+      const data = pad.isEmpty() ? null : pad.toDataURL();
+      fitCanvas(canvas);
+      if(data) {
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = ()=> ctx.drawImage(img,0,0,canvas.width/ (window.devicePixelRatio||1), canvas.height/ (window.devicePixelRatio||1));
+        img.src = data;
+      }
+    });
+    return pad;
+  }
+  const padSeller = createSignaturePad(sigSellerCanvas);
+  const padBuyer = createSignaturePad(sigBuyerCanvas);
+  clearSeller.addEventListener('click', ()=> padSeller.clear());
+  clearBuyer.addEventListener('click', ()=> padBuyer.clear());
+
+  // SERVICE: create dynamic rows
+  function createServiceRows(count){
+    serviceItemsContainer.innerHTML = '';
+    for(let i=0;i<count;i++){
+      const row = document.createElement('div');
+      row.className = 'service-row';
+      row.innerHTML = `
+        <input type="text" class="svc_name" placeholder="Service item name">
+        <input type="text" class="svc_desc" placeholder="Service description">
+        <input type="number" min="0" step="0.01" class="svc_cost" value="0" placeholder="Cost £">
+        <input type="number" min="0" step="0.01" class="svc_vat" value="0" placeholder="VAT £">
+        <input type="text" class="svc_sub" readonly placeholder="Sub total £">
+      `;
+      serviceItemsContainer.appendChild(row);
+    }
+    // attach listeners to cost/vat fields
+    Array.from(serviceItemsContainer.querySelectorAll('.svc_cost, .svc_vat')).forEach(inp=>{
+      inp.addEventListener('input', recalcServicesTotals);
+    });
+    recalcServicesTotals();
+  }
+  serviceCount.addEventListener('change', ()=> createServiceRows(Number(serviceCount.value)));
+  // initialize
+  createServiceRows(Number(serviceCount.value || 1));
+
+  serviceVatRegistered.addEventListener('change', ()=> {
+    // if not VAT registered, disable VAT inputs and set to 0
+    const disabled = serviceVatRegistered.value === 'no';
+    Array.from(serviceItemsContainer.querySelectorAll('.svc_vat')).forEach(v=>{
+      v.disabled = disabled;
+      if(disabled){ v.value = '0'; }
+    });
+    recalcServicesTotals();
+  });
+
+  function recalcServicesTotals(){
+    const rows = Array.from(serviceItemsContainer.querySelectorAll('.service-row'));
+    let subtotal = 0;
+    let vatTotal = 0;
+    rows.forEach(r=>{
+      const cost = toPence(r.querySelector('.svc_cost').value);
+      const vat = toPence(r.querySelector('.svc_vat').value);
+      const sub = cost + vat;
+      r.querySelector('.svc_sub').value = penceToNumber(sub).toFixed(2);
+      subtotal += cost;
+      vatTotal += vat;
+    });
+    const total = subtotal + vatTotal;
+    servicesSubtotalEl.textContent = penceToStr(subtotal);
+    servicesVatTotalEl.textContent = penceToStr(vatTotal);
+    servicesTotalEl.textContent = penceToStr(total);
+  }
+
+  // Reset form
+  resetBtn.addEventListener('click', ()=>{
+    if(!confirm('Reset the form?')) return;
+    document.querySelectorAll('input[type=text], input[type=email], input[type=tel], textarea, input[type=number]').forEach(i=> i.value = '');
+    document.querySelectorAll('input[type=checkbox], input[type=radio]').forEach(i=> i.checked = false);
+    modeItem.checked = true; updateMode();
+    taxExempt.checked = false; document.getElementById('tax_row').style.display = '';
+    serviceCount.value = '1'; createServiceRows(1);
+    serviceVatRegistered.value = 'no'; serviceVatRegistered.dispatchEvent(new Event('change'));
+    itemThumbs.innerHTML = ''; serviceThumbs.innerHTML = '';
+    itemImages.value = ''; serviceImages.value = '';
+    padSeller.clear(); padBuyer.clear();
+    recalcItemTotal();
+  });
+
+  // Build PDF content and generate
+  async function generatePDF(){
+    // prepare a clean render in #pdf_area (invisible in UI)
+    const pdfArea = document.getElementById('pdf_area');
+    pdfArea.innerHTML = ''; // clear
+
+    // helper for reading image files as dataURL
+    function filesToDataURLs(inputEl){
+      const files = Array.from(inputEl.files || []);
+      return Promise.all(files.map(f => new Promise((res,rej)=>{
+        const r = new FileReader();
+        r.onload = e => res({name:f.name, dataUrl:e.target.result});
+        r.onerror = rej;
+        r.readAsDataURL(f);
+      })));
+    }
+
+    // gather details
+    const seller = {
+      first: document.getElementById('seller_first').value || '',
+      last: document.getElementById('seller_last').value || '',
+      company: document.getElementById('seller_company').value || '',
+      prop: document.getElementById('seller_prop').value || '',
+      addr1: document.getElementById('seller_addr1').value || '',
+      addr2: document.getElementById('seller_addr2').value || '',
+      addr3: document.getElementById('seller_addr3').value || '',
+      town: document.getElementById('seller_town').value || '',
+      county: document.getElementById('seller_county').value || '',
+      post: document.getElementById('seller_post').value || '',
+      country: document.getElementById('seller_country').value || '',
+      tel: document.getElementById('seller_tel').value || '',
+      email: document.getElementById('seller_email').value || ''
+    };
+    const buyer = {
+      first: document.getElementById('buyer_first').value || '',
+      last: document.getElementById('buyer_last').value || '',
+      company: document.getElementById('buyer_company').value || '',
+      prop: document.getElementById('buyer_prop').value || '',
+      addr1: document.getElementById('buyer_addr1').value || '',
+      addr2: document.getElementById('buyer_addr2').value || '',
+      addr3: document.getElementById('buyer_addr3').value || '',
+      town: document.getElementById('buyer_town').value || '',
+      county: document.getElementById('buyer_county').value || '',
+      post: document.getElementById('buyer_post').value || '',
+      country: document.getElementById('buyer_country').value || '',
+      tel: document.getElementById('buyer_tel').value || '',
+      email: document.getElementById('buyer_email').value || ''
+    };
+    const purchaseDesc = document.getElementById('purchase_desc').value || '';
+    const purchaseSite = document.getElementById('purchase_site').value || '';
+
+    const mode = modeItem.checked ? 'item' : 'service';
+
+    let itemImagesData = await filesToDataURLs(itemImages);
+    let serviceImagesData = await filesToDataURLs(serviceImages);
+
+    // draw a neat receipt layout into pdfArea
+    const el = document.createElement('div');
+    el.style.fontFamily = 'Arial, Helvetica, sans-serif';
+    el.style.color = '#111';
+    el.style.padding = '14px';
+    el.style.width = '780px';
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <h2 style="margin:0">Receipt</h2>
+          <div style="color:#666">Date: ${new Date().toLocaleString()}</div>
+        </div>
+        <div style="text-align:right;color:#666">
+          <div>Purchase: ${escapeHtml(purchaseDesc)}</div>
+          <div>Site: ${escapeHtml(purchaseSite)}</div>
+        </div>
+      </div>
+      <hr style="margin:10px 0">
+      <div style="display:flex;gap:20px">
+        <div style="flex:1">
+          <strong>Seller</strong>
+          <div>${escapeHtml(seller.first)} ${escapeHtml(seller.last)} ${seller.company?('<div>'+escapeHtml(seller.company)+'</div>'):''}</div>
+          <div>${escapeHtml(seller.prop)}</div>
+          <div>${escapeHtml(seller.addr1)}</div>
+          <div>${escapeHtml(seller.addr2)}</div>
+          <div>${escapeHtml(seller.addr3)}</div>
+          <div>${escapeHtml(seller.town)} ${escapeHtml(seller.county)}</div>
+          <div>${escapeHtml(seller.post)} ${escapeHtml(seller.country)}</div>
+          <div class="muted">tel: ${escapeHtml(seller.tel)} | email: ${escapeHtml(seller.email)}</div>
+        </div>
+        <div style="flex:1">
+          <strong>Buyer</strong>
+          <div>${escapeHtml(buyer.first)} ${escapeHtml(buyer.last)} ${buyer.company?('<div>'+escapeHtml(buyer.company)+'</div>'):''}</div>
+          <div>${escapeHtml(buyer.prop)}</div>
+          <div>${escapeHtml(buyer.addr1)}</div>
+          <div>${escapeHtml(buyer.addr2)}</div>
+          <div>${escapeHtml(buyer.addr3)}</div>
+          <div>${escapeHtml(buyer.town)} ${escapeHtml(buyer.county)}</div>
+          <div>${escapeHtml(buyer.post)} ${escapeHtml(buyer.country)}</div>
+          <div class="muted">tel: ${escapeHtml(buyer.tel)} | email: ${escapeHtml(buyer.email)}</div>
+        </div>
+      </div>
+      <hr style="margin:10px 0">
+    `;
+
+    if(mode === 'item'){
+      const name = document.getElementById('item_name').value || '';
+      const desc = document.getElementById('item_desc').value || '';
+      const cond = document.getElementById('item_condition').value || '';
+      const cost = toPence(document.getElementById('item_cost').value);
+      const delivery = toPence(document.getElementById('item_delivery').value);
+      const tax = taxExempt.checked ? 0 : toPence(document.getElementById('item_tax').value);
+      const total = cost + delivery + tax;
+
+      el.innerHTML += `
+        <div>
+          <h3 style="margin:4px 0">Item</h3>
+          <div><strong>Name:</strong> ${escapeHtml(name)}</div>
+          <div><strong>Description:</strong> ${escapeHtml(desc)}</div>
+          <div><strong>Condition:</strong> ${escapeHtml(cond)}</div>
+          <table style="width:100%;margin-top:8px;border-collapse:collapse">
+            <tr>
+              <td style="padding:6px;border:1px solid #eee">Item cost</td><td style="padding:6px;border:1px solid #eee;text-align:right">${penceToStr(cost)}</td>
+            </tr>
+            <tr>
+              <td style="padding:6px;border:1px solid #eee">Delivery</td><td style="padding:6px;border:1px solid #eee;text-align:right">${penceToStr(delivery)}</td>
+            </tr>
+            ${taxExempt.checked ? '' : `<tr><td style="padding:6px;border:1px solid #eee">Tax</td><td style="padding:6px;border:1px solid #eee;text-align:right">${penceToStr(tax)}</td></tr>`}
+            <tr><td style="padding:6px;border:1px solid #eee"><strong>Total</strong></td><td style="padding:6px;border:1px solid #eee;text-align:right"><strong>${penceToStr(total)}</strong></td></tr>
+          </table>
+        </div>
+      `;
+
+      if(itemImagesData.length){
+        el.innerHTML += '<div style="margin-top:8px"><strong>Item Images:</strong></div>';
+        itemImagesData.forEach(img => {
+          el.innerHTML += `<div style="margin-top:6px"><img src="${img.dataUrl}" style="max-width:240px;max-height:180px;border:1px solid #eee;border-radius:6px"></div>`;
+        });
+      }
+    } else {
+      // services
+      el.innerHTML += `<div><h3 style="margin:4px 0">Services</h3>`;
+      const rows = Array.from(serviceItemsContainer.querySelectorAll('.service-row'));
+      el.innerHTML += `<table style="width:100%;border-collapse:collapse"><thead><tr>
+        <th style="text-align:left;border:1px solid #eee;padding:6px">Name</th>
+        <th style="text-align:left;border:1px solid #eee;padding:6px">Description</th>
+        <th style="text-align:right;border:1px solid #eee;padding:6px">Cost</th>
+        <th style="text-align:right;border:1px solid #eee;padding:6px">VAT</th>
+        <th style="text-align:right;border:1px solid #eee;padding:6px">Subtotal</th>
+      </tr></thead><tbody>`;
+      let sSubtotal=0, sVat=0;
+      rows.forEach(r=>{
+        const n = escapeHtml(r.querySelector('.svc_name').value || '');
+        const d = escapeHtml(r.querySelector('.svc_desc').value || '');
+        const cost = toPence(r.querySelector('.svc_cost').value);
+        const vat = toPence(r.querySelector('.svc_vat').value);
+        const sub = cost + vat;
+        sSubtotal += cost; sVat += vat;
+        el.innerHTML += `<tr>
+          <td style="border:1px solid #eee;padding:6px">${n}</td>
+          <td style="border:1px solid #eee;padding:6px">${d}</td>
+          <td style="border:1px solid #eee;padding:6px;text-align:right">${penceToStr(cost)}</td>
+          <td style="border:1px solid #eee;padding:6px;text-align:right">${penceToStr(vat)}</td>
+          <td style="border:1px solid #eee;padding:6px;text-align:right">${penceToStr(sub)}</td>
+        </tr>`;
+      });
+      const sTotal = sSubtotal + sVat;
+      el.innerHTML += `</tbody></table>
+        <div style="margin-top:8px;text-align:right">
+          <div>Services Subtotal: ${penceToStr(sSubtotal)}</div>
+          <div>Total VAT: ${penceToStr(sVat)}</div>
+          <div><strong>Total: ${penceToStr(sTotal)}</strong></div>
+        </div>
+      `;
+      if(serviceImagesData.length){
+        el.innerHTML += '<div style="margin-top:8px"><strong>Service Images:</strong></div>';
+        serviceImagesData.forEach(img => {
+          el.innerHTML += `<div style="margin-top:6px"><img src="${img.dataUrl}" style="max-width:240px;max-height:180px;border:1px solid #eee;border-radius:6px"></div>`;
+        });
+      }
+    }
+
+    // signatures
+    el.innerHTML += `<hr style="margin:10px 0"><div style="display:flex;gap:18px">
+      <div style="flex:1">
+        <div style="font-size:13px;color:#666">Seller's signature</div>
+        <div style="border:1px solid #eee;padding:8px;background:#fff;max-width:320px">
+          ${padSeller.isEmpty() ? '<div style="color:#999">No signature provided</div>' : `<img src="${padSeller.toDataURL()}" style="max-width:320px">`}
+        </div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:13px;color:#666">Buyer's signature</div>
+        <div style="border:1px solid #eee;padding:8px;background:#fff;max-width:320px">
+          ${padBuyer.isEmpty() ? '<div style="color:#999">No signature provided</div>' : `<img src="${padBuyer.toDataURL()}" style="max-width:320px">`}
+        </div>
+      </div>
+    </div>`;
+
+    el.innerHTML += `<div style="margin-top:16px;color:#666;font-size:12px">This document is computer generated and serves as the official receipt for the transaction described above.</div>`;
+
+    pdfArea.appendChild(el);
+
+    // Use html2canvas + jsPDF to render
+    const { jsPDF } = window.jspdf;
+
+    // hide UI so it doesn't affect rendering
+    const originalScroll = window.scrollY || 0;
+    // render the element
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff'
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({
+      orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+      unit: 'pt',
+      format: [canvas.width, canvas.height]
+    });
+
+    // add image to PDF sized to canvas
+    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+
+    // download
+    pdf.save('receipt.pdf');
+  }
+
+  // escape HTML to avoid injection into generated markup
+  function escapeHtml(str){
+    if(!str) return '';
+    return String(str).replace(/[&<>"']/g, function(m){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+    });
+  }
+
+  generateBtn.addEventListener('click', async (e) => {
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Generating...';
+    try{
+      await generatePDF();
+    }catch(err){
+      alert('Error generating PDF: ' + (err && err.message ? err.message : err));
+      console.error(err);
+    }finally{
+      generateBtn.disabled = false;
+      generateBtn.textContent = 'Generate Receipt (PDF)';
+    }
+  });
+
+  // initial calculations
+  recalcItemTotal();
+  recalcServicesTotals();
+
+})();
+</script>
+
+</body>
+</html>
