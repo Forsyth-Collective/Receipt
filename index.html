@@ -3,17 +3,26 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Anova Tek Solutions — Receipt Generator</title>
+  <title>Receipt Generator</title>
   <style>
-    :root{--bg:#f4f7fb;--card:#ffffff;--muted:#6b7280;--text:#0f172a;--primary:#2563eb;--border:#e6eefc;--shadow:0 10px 30px rgba(37,99,235,0.06)}
-    [data-theme="dark"]{--bg:#0b1220;--card:#0f1724;--muted:#94a3b8;--text:#e6eef8;--primary:#4c8aff;--border:#122033;--shadow:0 10px 30px rgba(76,138,255,0.06)}
+    :root{
+      --primary:#172a69; /* requested rich blue */
+      --primary-2:#20357d; /* gradient end */
+      --bg:#f7fafc;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --text:#0f172a;
+      --border:#e6edf8;
+      --shadow:0 8px 24px rgba(23,42,105,0.06);
+    }
+    [data-theme='dark']{ --bg:#0b1220; --card:#0f1724; --muted:#94a3b8; --text:#e6eef8; --border:#122033; --shadow:0 8px 24px rgba(0,0,0,0.5);} 
     html,body{height:100%;margin:0}
-    body{font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial;padding:28px;background:var(--bg);color:var(--text);transition:background .25s,color .25s}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial;padding:28px;background:var(--bg);color:var(--text)}
     .container{max-width:1100px;margin:0 auto}
-    h1{font-size:20px;margin:0 0 18px}
+    h1{font-size:20px;margin:0 0 16px}
     .card{background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px;border:1px solid var(--border);box-shadow:var(--shadow)}
-    details{margin-bottom:8px}
-    summary{font-weight:700;font-size:15px;cursor:pointer}
+    details{margin-bottom:12px}
+    summary{font-weight:700;font-size:15px;color:var(--primary);cursor:pointer}
     .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
     @media(max-width:900px){.grid{grid-template-columns:1fr}}
     label{display:block;font-weight:600;font-size:13px;margin-bottom:6px}
@@ -36,8 +45,9 @@
     th,td{padding:8px;border-bottom:1px solid var(--border);text-align:left}
     td.right{text-align:right}
     .footer-note{font-size:12px;color:var(--muted);margin-top:8px}
-    .small{font-size:13px}
   </style>
+
+  <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
@@ -47,6 +57,7 @@
   <div class="container">
     <h1>Receipt Generator</h1>
 
+    <!-- Seller & Buyer -->
     <details open class="card">
       <summary>Seller & Buyer Information</summary>
       <div class="grid" style="margin-top:12px">
@@ -101,6 +112,7 @@
       </div>
     </details>
 
+    <!-- Purchase details & VAT -->
     <details open class="card">
       <summary>Purchase details & VAT</summary>
       <div style="margin-top:12px">
@@ -143,6 +155,7 @@
       </div>
     </details>
 
+    <!-- Items -->
     <details open id="items_card" class="card">
       <summary>Items (if applicable)</summary>
       <div style="margin-top:12px">
@@ -158,7 +171,7 @@
         <div id="items_rows"></div>
 
         <div style="margin-top:8px">
-          <div class="muted">Upload pictures of the item(s) — images will be included on page 2+ of the PDF gallery.</div>
+          <div class="muted">Upload pictures of the item(s) — images will be on page 2+ of the PDF gallery.</div>
           <div style="margin-top:6px"><input id="items_images" type="file" accept="image/*" multiple></div>
         </div>
 
@@ -168,6 +181,7 @@
       </div>
     </details>
 
+    <!-- Services -->
     <details id="services_card" class="card">
       <summary>Services (if applicable)</summary>
       <div style="margin-top:12px">
@@ -183,7 +197,7 @@
         <div id="services_rows"></div>
 
         <div style="margin-top:8px">
-          <div class="muted">Upload pictures of the service (e.g., before/after) — images will be included on page 2+ of the PDF gallery.</div>
+          <div class="muted">Upload pictures of the service (e.g., before/after) — images will be on page 2+ of the PDF gallery.</div>
           <div style="margin-top:6px"><input id="services_images" type="file" accept="image/*" multiple></div>
         </div>
 
@@ -193,6 +207,7 @@
       </div>
     </details>
 
+    <!-- Signatures -->
     <details open class="card">
       <summary>Signatures</summary>
       <div style="margin-top:12px" class="grid">
@@ -214,8 +229,9 @@
       <div class="muted footer-note">PDF is generated fully client-side — no server required.</div>
     </div>
 
-    <div class="footer-note">Tip: Save this HTML file and open in any modern browser. Libraries are loaded from CDN; to run fully offline you can request an offline bundle.</div>
+    <div class="footer-note">Tip: Save this HTML file and open in any modern browser. To run completely offline request a bundled copy.</div>
 
+    <!-- hidden preview area used for rendering page1 via html2canvas -->
     <div id="receipt_preview_wrapper" style="position:fixed;left:-9999px;top:0;width:793px;padding:20px;background:white" aria-hidden="true">
       <div id="receipt_preview" style="width:753px;font-family:Arial,Helvetica,sans-serif;color:#111"></div>
     </div>
@@ -223,33 +239,33 @@
   </div>
 
 <script>
-// helpers
+// --- helpers
 const q=id=>document.getElementById(id);
 const fmt=n=>Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 
-// populate 1..10
+// populate counts
 for(let i=1;i<=10;i++){ q('items_count').appendChild(new Option(i,i)); q('services_count').appendChild(new Option(i,i)); }
 
 // platform other
 q('platform_select').addEventListener('change', e=>{ q('platform_other_wrap').style.display = e.target.value==='Other' ? 'block' : 'none'; });
 
 // type toggles
-q('is_item').addEventListener('change', ()=>{ q('items_card').open=true; q('services_card').open=false; });
-q('is_service').addEventListener('change', ()=>{ q('items_card').open=false; q('services_card').open=true; });
+q('is_item').addEventListener('change', ()=>{ q('items_card').open = true; q('services_card').open = false; });
+q('is_service').addEventListener('change', ()=>{ q('items_card').open = false; q('services_card').open = true; });
 
 // Shared VAT controls
 q('vat_reg').addEventListener('change', e=>{ q('vat_controls').style.display = e.target.checked ? 'block' : 'none'; computeItemsTotal(); computeServicesTotal(); });
 q('vat_rate').addEventListener('change', e=>{ q('vat_custom_wrap').style.display = e.target.value==='custom' ? 'block' : 'none'; computeItemsTotal(); computeServicesTotal(); });
 q('vat_custom').addEventListener('input', ()=>{ computeItemsTotal(); computeServicesTotal(); });
 
-// image files arrays
+// image file storage
 let itemsImageFiles = [], servicesImageFiles = [];
 q('items_images').addEventListener('change', e=>{ itemsImageFiles = Array.from(e.target.files||[]); renderImageGrid(itemsImageFiles, 'items_images_grid'); });
 q('services_images').addEventListener('change', e=>{ servicesImageFiles = Array.from(e.target.files||[]); renderImageGrid(servicesImageFiles, 'services_images_grid'); });
 
 function renderImageGrid(files, containerId){ const wrap=q(containerId); wrap.innerHTML=''; files.forEach(f=>{ const img=document.createElement('img'); img.className='thumb'; const reader=new FileReader(); reader.onload=ev=>img.src=ev.target.result; reader.readAsDataURL(f); wrap.appendChild(img); }); }
 
-// render item/service rows
+// render rows
 function renderItemRows(){ const container=q('items_rows'); container.innerHTML=''; const n=Number(q('items_count').value||1); for(let i=0;i<n;i++){ const id=`item_${i}`; const card=document.createElement('div'); card.className='card'; card.style.marginBottom='10px'; card.innerHTML = `
     <div class="grid">
       <div><label>Item Name<input id="${id}_name" type="text"></label></div>
@@ -279,11 +295,10 @@ q('services_delivery').addEventListener('input', computeServicesTotal);
 
 function computeItemsTotal(){ const n=Number(q('items_count').value||0); let subtotal=0, vatTotal=0; const vatReg=q('vat_reg').checked; let vatRate = q('vat_rate').value==='custom'?Number(q('vat_custom').value||0):Number(q('vat_rate').value); for(let i=0;i<n;i++){ const cost=Number(q(`item_${i}_cost`)?.value||0); subtotal+=cost; const applies = q(`item_${i}_vat_chk`)?.checked; if(vatReg && applies){ vatTotal += cost * vatRate/100; } } const delivery=Number(q('items_delivery').value||0); const total=subtotal+vatTotal+delivery; q('items_total').textContent = fmt(total); }
 
-function computeServicesTotal(){ const n=Number(q('services_count').value||0); let subtotal=0, vatTotal=0; const vatReg=q('vat_reg').checked; let vatRate = q('vat_rate').value==='custom'?Number(q('vat_custom').value||0):Number(q('vat_rate').value); for(let i=0;i<n;i++){ const cost=Number(q(`svc_${i}_cost`)?.value||0); subtotal+=cost; // services don't have per-item VAT checkbox, apply VAT to all services if vatReg checked
-    if(vatReg){ vatTotal += cost * vatRate/100; } } const delivery=Number(q('services_delivery').value||0); const total=subtotal+vatTotal+delivery; q('services_total').textContent = fmt(total); }
+function computeServicesTotal(){ const n=Number(q('services_count').value||0); let subtotal=0, vatTotal=0; const vatReg=q('vat_reg').checked; let vatRate = q('vat_rate').value==='custom'?Number(q('vat_custom').value||0):Number(q('vat_rate').value); for(let i=0;i<n;i++){ const cost=Number(q(`svc_${i}_cost`)?.value||0); subtotal+=cost; if(vatReg){ vatTotal += cost * vatRate/100; } } const delivery=Number(q('services_delivery').value||0); const total=subtotal+vatTotal+delivery; q('services_total').textContent = fmt(total); }
 
 // signatures
-let sellerSigPad, buyerSigPad; function initSignatures(){ const s=q('seller_sig'), b=q('buyer_sig'); function resize(c){ const ratio=Math.max(window.devicePixelRatio||1,1); const w=c.offsetWidth; c.width=w*ratio; c.height=c.offsetHeight*ratio; c.getContext('2d').scale(ratio,ratio); } resize(s); resize(b); sellerSigPad=new SignaturePad(s,{minWidth:1}); buyerSigPad=new SignaturePad(b,{minWidth:1}); window.addEventListener('resize', ()=>{ resize(s); resize(b); sellerSigPad.clear(); buyerSigPad.clear(); }); q('seller_clear').addEventListener('click', ()=>sellerSigPad.clear()); q('buyer_clear').addEventListener('click', ()=>buyerSigPad.clear()); } initSignatures();
+let sellerSigPad,buyerSigPad; function initSignatures(){ const s=q('seller_sig'), b=q('buyer_sig'); function resize(c){ const ratio=Math.max(window.devicePixelRatio||1,1); const w=c.offsetWidth; c.width=w*ratio; c.height=c.offsetHeight*ratio; c.getContext('2d').scale(ratio,ratio); } resize(s); resize(b); sellerSigPad=new SignaturePad(s,{minWidth:1}); buyerSigPad=new SignaturePad(b,{minWidth:1}); window.addEventListener('resize', ()=>{ resize(s); resize(b); sellerSigPad.clear(); buyerSigPad.clear(); }); q('seller_clear').addEventListener('click', ()=>sellerSigPad.clear()); q('buyer_clear').addEventListener('click', ()=>buyerSigPad.clear()); } initSignatures();
 
 // theme toggle
 q('themeToggle').addEventListener('click', ()=>{ const r=document.documentElement; if(r.getAttribute('data-theme')==='dark'){ r.removeAttribute('data-theme'); q('themeToggle').textContent='🌙'; } else { r.setAttribute('data-theme','dark'); q('themeToggle').textContent='☀️'; } });
@@ -291,77 +306,101 @@ q('themeToggle').addEventListener('click', ()=>{ const r=document.documentElemen
 // file to dataURL
 function fileToDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=err=>rej(err); r.readAsDataURL(file); }); }
 
-// receipt number generator: ATS + seller initials + buyer initials + YYYYMMDDHHMMSS + 4digit random
+// receipt number generator
 function generateReceiptNumber(){ const sfn=(q('seller_first').value||'X').trim().charAt(0).toUpperCase(); const sln=(q('seller_last').value||'X').trim().charAt(0).toUpperCase(); const bfn=(q('buyer_first').value||'X').trim().charAt(0).toUpperCase(); const bln=(q('buyer_last').value||'X').trim().charAt(0).toUpperCase(); const dt=new Date(); const y=dt.getFullYear().toString().padStart(4,'0'); const m=(dt.getMonth()+1).toString().padStart(2,'0'); const d=dt.getDate().toString().padStart(2,'0'); const hh=dt.getHours().toString().padStart(2,'0'); const mm=dt.getMinutes().toString().padStart(2,'0'); const ss=dt.getSeconds().toString().padStart(2,'0'); const stamp=`${y}${m}${d}${hh}${mm}${ss}`; const rnd=Math.floor(1000+Math.random()*9000); return `ATS-${sfn}${sln}-${bfn}${bln}-${stamp}-${rnd}`; }
 
-// load image helper
+// helper to load image
 function loadImage(dataURL){ return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=()=>rej(new Error('Image load error')); img.src=dataURL; }); }
 
-// Generate PDF: Page 1 = receipt content (no images). Page 2+ = gallery with 4 per page
+// generate PDF: page1 = receipt content (no images), page2+ = gallery 4 per page
 q('generate').addEventListener('click', async ()=>{
-  // prepare data
-  const receiptNumber = generateReceiptNumber(); const generatedAt = new Date();
-  // collect gallery images (items then services)
-  const gallery = [];
-  for(const f of itemsImageFiles){ try{ gallery.push(await fileToDataURL(f)); } catch(e){} }
-  for(const f of servicesImageFiles){ try{ gallery.push(await fileToDataURL(f)); } catch(e){} }
+  const receiptNumber = generateReceiptNumber();
+  const generatedAt = new Date();
 
-  // build page1 preview DOM
-  const preview = document.createElement('div'); preview.style.width='760px'; preview.style.padding='18px'; preview.style.background='#fff'; preview.style.color='#111'; preview.style.boxSizing='border-box';
-  // header bar
-  const headerBar = document.createElement('div'); headerBar.style.display='flex'; headerBar.style.justifyContent='space-between'; headerBar.style.alignItems='center'; headerBar.style.background='linear-gradient(90deg,#2563eb, #4c8aff)'; headerBar.style.color='#fff'; headerBar.style.padding='14px'; headerBar.style.borderRadius='8px'; headerBar.innerHTML = `<div style="font-size:18px;font-weight:700">Receipt</div><div style="text-align:right;font-size:12px">${escapeHtml(receiptNumber)}<br>${generatedAt.toLocaleString()}</div>`;
-  preview.appendChild(headerBar);
-  // seller/buyer
-  const parties = document.createElement('div'); parties.style.display='flex'; parties.style.justifyContent='space-between'; parties.style.gap='12px'; parties.style.marginTop='12px';
-  const sellerHtml = `<div style="flex:1"><strong>Seller</strong><br>${escapeHtml(q('seller_first').value + ' ' + q('seller_last').value)}<br>${escapeHtml(q('seller_company').value)}<br>${escapeHtml([q('seller_addr1').value,q('seller_addr2').value,q('seller_addr3').value].filter(Boolean).join(', '))}<br>${escapeHtml([q('seller_town').value,q('seller_county').value,q('seller_postcode').value,q('seller_country').value].filter(Boolean).join(', '))}<br>Tel: ${escapeHtml(q('seller_tel').value)}<br>Email: ${escapeHtml(q('seller_email').value)}</div>`;
-  const buyerHtml = `<div style="flex:1"><strong>Buyer</strong><br>${escapeHtml(q('buyer_first').value + ' ' + q('buyer_last').value)}<br>${escapeHtml(q('buyer_company').value)}<br>${escapeHtml([q('buyer_addr1').value,q('buyer_addr2').value,q('buyer_addr3').value].filter(Boolean).join(', '))}<br>${escapeHtml([q('buyer_town').value,q('buyer_county').value,q('buyer_postcode').value,q('buyer_country').value].filter(Boolean).join(', '))}<br>Tel: ${escapeHtml(q('buyer_tel').value)}<br>Email: ${escapeHtml(q('buyer_email').value)}</div>`;
-  const platform = q('platform_select').value==='Other' ? q('platform_other').value : q('platform_select').value;
-  const partiesWrap = document.createElement('div'); partiesWrap.style.display='flex'; partiesWrap.style.flexDirection='row'; partiesWrap.style.gap='12px'; partiesWrap.innerHTML = sellerHtml + buyerHtml;
-  preview.appendChild(partiesWrap);
-  const platformDiv = document.createElement('div'); platformDiv.style.marginTop='10px'; platformDiv.innerHTML = `<strong>Platform:</strong> ${escapeHtml(platform)}`; preview.appendChild(platformDiv);
+  // gather gallery images
+  const gallery = [];
+  for(const f of itemsImageFiles){ try{ gallery.push(await fileToDataURL(f)); } catch(e){ console.warn('image read error',e); } }
+  for(const f of servicesImageFiles){ try{ gallery.push(await fileToDataURL(f)); } catch(e){ console.warn('image read error',e); } }
+
+  // build DOM preview for page1 (styled, header with gradient and spacing)
+  const preview = document.createElement('div'); preview.style.width='790px'; preview.style.padding='22px'; preview.style.background='#fff'; preview.style.boxSizing='border-box';
+
+  // header bar with gradient and space under it
+  const header = document.createElement('div'); header.style.width='100%'; header.style.padding='16px'; header.style.borderRadius='8px'; header.style.background = 'linear-gradient(90deg, var(--p1, #172a69), var(--p2, #20357d))'; header.style.color='white'; header.style.display='flex'; header.style.justifyContent='space-between'; header.style.alignItems='center'; header.style.boxSizing='border-box';
+  header.innerHTML = `<div style="font-size:20px;font-weight:700">Receipt</div><div style="text-align:right;font-size:12px">${receiptNumber}<br>${generatedAt.toLocaleString()}</div>`;
+  // Need CSS variables replaced for html2canvas, so inline actual colors
+  header.style.background = 'linear-gradient(90deg, #172a69, #20357d)';
+  preview.appendChild(header);
+
+  // add spacing
+  const spacer = document.createElement('div'); spacer.style.height='22px'; preview.appendChild(spacer);
+
+  // parties
+  const parties = document.createElement('div'); parties.style.display='flex'; parties.style.justifyContent='space-between'; parties.style.gap='12px';
+  const sellerHtml = `<div style="flex:1"><strong>Seller</strong><br>${escapeHtml(q('seller_first').value+' '+q('seller_last').value)}<br>${escapeHtml(q('seller_company').value)}<br>${escapeHtml([q('seller_addr1').value,q('seller_addr2').value,q('seller_addr3').value].filter(Boolean).join(', '))}<br>${escapeHtml([q('seller_town').value,q('seller_county').value,q('seller_postcode').value,q('seller_country').value].filter(Boolean).join(', '))}<br>Tel: ${escapeHtml(q('seller_tel').value)}<br>Email: ${escapeHtml(q('seller_email').value)}</div>`;
+  const buyerHtml = `<div style="flex:1"><strong>Buyer</strong><br>${escapeHtml(q('buyer_first').value+' '+q('buyer_last').value)}<br>${escapeHtml(q('buyer_company').value)}<br>${escapeHtml([q('buyer_addr1').value,q('buyer_addr2').value,q('buyer_addr3').value].filter(Boolean).join(', '))}<br>${escapeHtml([q('buyer_town').value,q('buyer_county').value,q('buyer_postcode').value,q('buyer_country').value].filter(Boolean).join(', '))}<br>Tel: ${escapeHtml(q('buyer_tel').value)}<br>Email: ${escapeHtml(q('buyer_email').value)}</div>`;
+  parties.innerHTML = sellerHtml + buyerHtml;
+  preview.appendChild(parties);
+
+  // platform
+  const platformDiv = document.createElement('div'); platformDiv.style.marginTop='12px'; const platform = q('platform_select').value==='Other' ? q('platform_other').value : q('platform_select').value; platformDiv.innerHTML = `<strong>Platform:</strong> ${escapeHtml(platform)}`;
+  preview.appendChild(platformDiv);
 
   // items/services tables
-  if(q('is_item').checked){ const n=Number(q('items_count').value||0); if(n>0){ const h=document.createElement('h3'); h.textContent='Items'; h.style.marginTop='12px'; preview.appendChild(h); const table=document.createElement('table'); table.style.width='100%'; const thead=document.createElement('thead'); thead.innerHTML='<tr><th style="color:#2563eb">Item</th><th style="color:#2563eb">Condition</th><th style="color:#2563eb">Description</th><th style="color:#2563eb" class="right">Cost £</th><th style="color:#2563eb" class="right">VAT £</th></tr>'; table.appendChild(thead); const tbody=document.createElement('tbody'); let subtotal=0, vatTotal=0; const vatReg = q('vat_reg').checked; let vatRate = q('vat_rate').value==='custom'?Number(q('vat_custom').value||0):Number(q('vat_rate').value); for(let i=0;i<n;i++){ const name=q(`item_${i}_name`).value||''; const cond=q(`item_${i}_cond`).value||''; const desc=q(`item_${i}_desc`).value||''; const cost=Number(q(`item_${i}_cost`).value||0); const applies = q(`item_${i}_vat_chk`).checked; const vat = (vatReg && applies)? cost*vatRate/100 : 0; subtotal+=cost; vatTotal+=vat; const tr=document.createElement('tr'); tr.innerHTML=`<td>${escapeHtml(name)}</td><td>${escapeHtml(cond)}</td><td>${escapeHtml(desc)}</td><td style="text-align:right">${fmt(cost)}</td><td style="text-align:right">${fmt(vat)}</td>`; tbody.appendChild(tr); } table.appendChild(tbody); preview.appendChild(table); const delivery=Number(q('items_delivery').value||0); const total=subtotal+vatTotal+delivery; const totals=document.createElement('div'); totals.style.marginTop='8px'; totals.innerHTML=`Subtotal £${fmt(subtotal)}<br>VAT £${fmt(vatTotal)}<br>Delivery £${fmt(delivery)}<br><strong>Total £${fmt(total)}</strong>`; preview.appendChild(totals); } }
+  if(q('is_item').checked){ const n=Number(q('items_count').value||0); if(n>0){ const h=document.createElement('h3'); h.textContent='Items'; h.style.marginTop='12px'; preview.appendChild(h); const table=document.createElement('table'); table.style.width='100%'; const thead=document.createElement('thead'); thead.innerHTML='<tr><th style="color:#172a69">Item</th><th style="color:#172a69">Condition</th><th style="color:#172a69">Description</th><th style="color:#172a69;text-align:right">Cost £</th><th style="color:#172a69;text-align:right">VAT £</th></tr>'; table.appendChild(thead); const tbody=document.createElement('tbody'); let subtotal=0, vatTotal=0; const vatReg=q('vat_reg').checked; let vatRate = q('vat_rate').value==='custom'?Number(q('vat_custom').value||0):Number(q('vat_rate').value); for(let i=0;i<n;i++){ const name=q(`item_${i}_name`).value||''; const cond=q(`item_${i}_cond`).value||''; const desc=q(`item_${i}_desc`).value||''; const cost=Number(q(`item_${i}_cost`).value||0); const applies = q(`item_${i}_vat_chk`).checked; const vat = (vatReg && applies)? cost*vatRate/100 : 0; subtotal+=cost; vatTotal+=vat; const tr=document.createElement('tr'); tr.innerHTML=`<td>${escapeHtml(name)}</td><td>${escapeHtml(cond)}</td><td>${escapeHtml(desc)}</td><td style="text-align:right">${fmt(cost)}</td><td style="text-align:right">${fmt(vat)}</td>`; tbody.appendChild(tr); } table.appendChild(tbody); preview.appendChild(table); const delivery=Number(q('items_delivery').value||0); const total=subtotal+vatTotal+delivery; const totals=document.createElement('div'); totals.style.marginTop='10px'; totals.innerHTML=`Subtotal £${fmt(subtotal)}<br>VAT £${fmt(vatTotal)}<br>Delivery £${fmt(delivery)}<br><strong>Total £${fmt(total)}</strong>`; preview.appendChild(totals); } }
 
-  if(q('is_service').checked){ const n=Number(q('services_count').value||0); if(n>0){ const h=document.createElement('h3'); h.textContent='Services'; h.style.marginTop='12px'; preview.appendChild(h); const table=document.createElement('table'); const thead=document.createElement('thead'); thead.innerHTML='<tr><th style="color:#2563eb">Service</th><th style="color:#2563eb">Description</th><th style="color:#2563eb" class="right">Cost £</th><th style="color:#2563eb" class="right">VAT £</th></tr>'; table.appendChild(thead); const tbody=document.createElement('tbody'); let subtotal=0, vatTotal=0; const vatReg = q('vat_reg').checked; let vatRate = q('vat_rate').value==='custom'?Number(q('vat_custom').value||0):Number(q('vat_rate').value); for(let i=0;i<n;i++){ const name=q(`svc_${i}_name`).value||''; const desc=q(`svc_${i}_desc`).value||''; const cost=Number(q(`svc_${i}_cost`).value||0); const vat = (vatReg)? cost*vatRate/100 : 0; subtotal+=cost; vatTotal+=vat; const tr=document.createElement('tr'); tr.innerHTML=`<td>${escapeHtml(name)}</td><td>${escapeHtml(desc)}</td><td style="text-align:right">${fmt(cost)}</td><td style="text-align:right">${fmt(vat)}</td>`; tbody.appendChild(tr); } table.appendChild(tbody); preview.appendChild(table); const delivery=Number(q('services_delivery').value||0); const total=subtotal+vatTotal+delivery; const totals=document.createElement('div'); totals.style.marginTop='8px'; totals.innerHTML=`Subtotal £${fmt(subtotal)}<br>VAT £${fmt(vatTotal)}<br>Delivery £${fmt(delivery)}<br><strong>Total £${fmt(total)}</strong>`; preview.appendChild(totals); } }
+  if(q('is_service').checked){ const n=Number(q('services_count').value||0); if(n>0){ const h=document.createElement('h3'); h.textContent='Services'; h.style.marginTop='12px'; preview.appendChild(h); const table=document.createElement('table'); const thead=document.createElement('thead'); thead.innerHTML='<tr><th style="color:#172a69">Service</th><th style="color:#172a69">Description</th><th style="color:#172a69;text-align:right">Cost £</th><th style="color:#172a69;text-align:right">VAT £</th></tr>'; table.appendChild(thead); const tbody=document.createElement('tbody'); let subtotal=0, vatTotal=0; const vatReg=q('vat_reg').checked; let vatRate = q('vat_rate').value==='custom'?Number(q('vat_custom').value||0):Number(q('vat_rate').value); for(let i=0;i<n;i++){ const name=q(`svc_${i}_name`).value||''; const desc=q(`svc_${i}_desc`).value||''; const cost=Number(q(`svc_${i}_cost`).value||0); const vat = (vatReg)? cost*vatRate/100 : 0; subtotal+=cost; vatTotal+=vat; const tr=document.createElement('tr'); tr.innerHTML=`<td>${escapeHtml(name)}</td><td>${escapeHtml(desc)}</td><td style="text-align:right">${fmt(cost)}</td><td style="text-align:right">${fmt(vat)}</td>`; tbody.appendChild(tr); } table.appendChild(tbody); preview.appendChild(table); const delivery=Number(q('services_delivery').value||0); const total=subtotal+vatTotal+delivery; const totals=document.createElement('div'); totals.style.marginTop='10px'; totals.innerHTML=`Subtotal £${fmt(subtotal)}<br>VAT £${fmt(vatTotal)}<br>Delivery £${fmt(delivery)}<br><strong>Total £${fmt(total)}</strong>`; preview.appendChild(totals); } }
 
-  // signatures (drawn images placed on page1)
-  const sigDiv=document.createElement('div'); sigDiv.style.marginTop='18px'; sigDiv.innerHTML = '<div style="display:flex;justify-content:space-between;gap:12px;margin-top:18px">' +
-    `<div style="width:45%"><div style="border-bottom:1px solid #000;height:1px;margin-bottom:6px"></div><div>Seller signature</div></div>` +
-    `<div style="width:45%"><div style="border-bottom:1px solid #000;height:1px;margin-bottom:6px"></div><div>Buyer signature</div></div>` +
-  '</div>';
-  preview.appendChild(sigDiv);
+  // signatures (rendered on page 1)
+  const sigDiv = document.createElement('div'); sigDiv.style.marginTop='18px'; sigDiv.innerHTML = `<div style="display:flex;justify-content:space-between;gap:12px;margin-top:18px"><div style="width:45%"><div style="border-bottom:1px solid #000;height:1px;margin-bottom:6px"></div><div>Seller signature</div></div><div style="width:45%"><div style="border-bottom:1px solid #000;height:1px;margin-bottom:6px"></div><div>Buyer signature</div></div></div>`; preview.appendChild(sigDiv);
+  // place drawn signatures if present
+  const sellerImg = sellerSigPad.isEmpty()?null:sellerSigPad.toDataURL(); const buyerImg = buyerSigPad.isEmpty()?null:buyerSigPad.toDataURL(); if(sellerImg){ const leftDiv = sigDiv.querySelector('div > div:last-child'); leftDiv.innerHTML += `<div><img src="${sellerImg}" style="max-width:100%;height:70px;object-fit:contain"></div>`; } if(buyerImg){ const rightDiv = sigDiv.querySelectorAll('div')[1].querySelector('div:last-child'); rightDiv.innerHTML += `<div><img src="${buyerImg}" style="max-width:100%;height:70px;object-fit:contain"></div>`; }
 
-  // VAT number on page footer area
+  // VAT number (footer area on page1)
   if(q('vat_reg').checked && q('vat_number').value.trim()){ const ft=document.createElement('div'); ft.style.marginTop='12px'; ft.style.fontSize='12px'; ft.textContent = 'Seller VAT number: ' + q('vat_number').value.trim(); preview.appendChild(ft); }
 
-  // place signatures images if present
-  const sellerImg = sellerSigPad.isEmpty()?null:sellerSigPad.toDataURL(); const buyerImg = buyerSigPad.isEmpty()?null:buyerSigPad.toDataURL(); if(sellerImg||buyerImg){ const sImgs = preview.querySelectorAll('div[style*="border-bottom"]'); if(sellerImg) sImgs[0].parentNode.querySelector('div:last-child').innerHTML += `<div><img src="${sellerImg}" style="max-width:100%;height:70px;object-fit:contain"></div>`; if(buyerImg) sImgs[1].parentNode.querySelector('div:last-child').innerHTML += `<div><img src="${buyerImg}" style="max-width:100%;height:70px;object-fit:contain"></div>`; }
+  // render preview into hidden wrapper and capture via html2canvas
+  const wrapper = q('receipt_preview_wrapper'); wrapper.style.left='10px'; const previewHolder = q('receipt_preview'); previewHolder.innerHTML=''; previewHolder.appendChild(preview);
+  // give images/signatures a moment to load
+  await new Promise(r=>setTimeout(r,140));
 
-  // render page1 to canvas and add to PDF
-  const wrapper = q('receipt_preview_wrapper'); wrapper.style.left='10px'; wrapper.querySelector('#receipt_preview').innerHTML=''; wrapper.querySelector('#receipt_preview').appendChild(preview);
-  await new Promise(r=>setTimeout(r,120)); // allow images/signatures to settle
   try{
     const canvas = await html2canvas(preview, {scale:2, useCORS:true, allowTaint:true});
-    const imgData = canvas.toDataURL('image/png'); const { jsPDF } = window.jspdf; const pdf = new jsPDF({unit:'pt',format:'a4'});
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({unit:'pt',format:'a4'});
     const pdfW = pdf.internal.pageSize.getWidth(); const pdfH = pdf.internal.pageSize.getHeight(); const margin = 20; const imgW = pdfW - margin*2; const imgH = (canvas.height * imgW) / canvas.width;
-    pdf.addImage(imgData, 'PNG', margin, margin, imgW, imgH);
 
-    // Now add gallery images starting from page 2, 4 per page (2x2)
-    const perPage = 4; for(let i=0;i<gallery.length;i+=perPage){ pdf.addPage(); const group = gallery.slice(i, i+perPage); const colW = (pdfW - margin*2)/2; const rowH = (pdfH - margin*2)/2; for(let j=0;j<group.length;j++){ const imgD = group[j]; // load to get aspect ratio
-        try{ const imgObj = await loadImage(imgD); const ratio = Math.min(colW / imgObj.naturalWidth, rowH / imgObj.naturalHeight); const dw = imgObj.naturalWidth * ratio; const dh = imgObj.naturalHeight * ratio; const col = j%2; const row = Math.floor(j/2); const x = margin + col*colW + (colW - dw)/2; const y = margin + row*rowH + (rowH - dh)/2; pdf.addImage(imgD, 'PNG', x, y, dw, dh); } catch(e){ console.warn('image load failed', e); } }
+    // add page1 (receipt content) with vertical spacing ensured by preview layout
+    pdf.addImage(imgData,'PNG',margin,margin,imgW,imgH);
+
+    // Add gallery images starting from page 2, 4 per page (2x2)
+    const perPage = 4;
+    for(let i=0;i<gallery.length;i+=perPage){
+      pdf.addPage();
+      const group = gallery.slice(i,i+perPage);
+      const colW = (pdfW - margin*2)/2; const rowH = (pdfH - margin*2)/2;
+      for(let j=0;j<group.length;j++){
+        const imgD = group[j];
+        try{
+          const imgObj = await loadImage(imgD);
+          const ratio = Math.min(colW / imgObj.naturalWidth, rowH / imgObj.naturalHeight);
+          const dw = imgObj.naturalWidth * ratio; const dh = imgObj.naturalHeight * ratio;
+          const col = j%2; const row = Math.floor(j/2);
+          const x = margin + col*colW + (colW - dw)/2; const y = margin + row*rowH + (rowH - dh)/2;
+          pdf.addImage(imgD, 'PNG', x, y, dw, dh);
+        } catch(e){ console.warn('gallery image add error', e); }
+      }
     }
 
-    // Footer: receipt number/date already on header; remove brand as requested
+    // Save PDF
     pdf.save('receipt-'+receiptNumber+'.pdf');
   } catch(err){ console.error(err); alert('PDF generation error: '+err.message); }
+
   wrapper.style.left='-9999px';
 });
 
-// initialize empty arrays for images when page loads
-q('items_images').addEventListener('change', ()=>{}); q('services_images').addEventListener('change', ()=>{});
-
-// wire file inputs to arrays (re-define to ensure variables in scope)
+// wire file inputs to arrays (ensure defined)
 q('items_images').addEventListener('change', e=>{ itemsImageFiles = Array.from(e.target.files||[]); renderImageGrid(itemsImageFiles, 'items_images_grid'); });
 q('services_images').addEventListener('change', e=>{ servicesImageFiles = Array.from(e.target.files||[]); renderImageGrid(servicesImageFiles, 'services_images_grid'); });
 
